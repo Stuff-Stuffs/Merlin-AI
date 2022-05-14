@@ -1,4 +1,4 @@
-package io.github.artificial_intellicrafters.merlin_ai.client;
+package io.github.artificial_intellicrafters.merlin_ai.impl.client;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;

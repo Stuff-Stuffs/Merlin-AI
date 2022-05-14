@@ -17,7 +17,8 @@
 		},
 		"intermediate_mappings": "net.fabricmc:intermediary",
 		"entrypoints": {
-			"init": "io.github.artificial_intellicrafters.merlin_ai.common.MerlinAI"
+			"init": "io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI",
+			"client_init": "io.github.artificial_intellicrafters.merlin_ai.impl.client.MerlinAIClient"
 		},
 		"depends": [
 			{
