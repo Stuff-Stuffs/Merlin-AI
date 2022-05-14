@@ -1,4 +1,4 @@
-package io.github.artificial_intellicrafters.merlin_ai.common;
+package io.github.artificial_intellicrafters.merlin_ai.impl.common;
 
 import net.minecraft.util.Identifier;
 import org.quiltmc.loader.api.ModContainer;
