@@ -1,0 +1,42 @@
+{
+	"schema_version": 1,
+	"quilt_loader": {
+		"group": "io.github.artificial_intellicrafters",
+		"id": "merlin_ai_test_mod",
+		"version": "${version}",
+		"metadata": {
+			"name": "Merlin AI Test Mod",
+			"description": "An open source AI Library test mod",
+			"contributors": {
+			},
+			"contact": {
+				"issues": "https://github.com/Artificial-Intellicrafters/Merlin-AI/issues",
+				"sources": "https://github.com/Artificial-Intellicrafters/Merlin-AI"
+			},
+			"icon": "assets/example_mod/icon.png"
+		},
+		"intermediate_mappings": "net.fabricmc:intermediary",
+		"entrypoints": {
+			"init": "io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest",
+			"client_init": "io.github.artificial_intellicrafters.merlin_ai_test.client.MerlinAITestClient"
+		},
+		"depends": [
+			{
+				"id": "quilt_loader",
+				"versions": ">=0.16.0-"
+			},
+			{
+				"id": "quilted_fabric_api",
+				"versions": ">=1.0.0-"
+			},
+			{
+				"id": "minecraft",
+				"versions": ">=1.18.2"
+			},
+			{
+				"id": "merlin_ai",
+				"versions": ">=0.0"
+			}
+		]
+	}
+}
