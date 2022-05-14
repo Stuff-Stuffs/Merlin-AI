@@ -35,7 +35,7 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	}
 
 	@Override
-	public <T> ValidLocationSet<T> vaa$getValidLocationSet(final ValidLocationSetType<T> type, final ChunkSectionPos pos, final WorldCache world) {
+	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final ChunkSectionPos pos, final WorldCache world) {
 		ValidLocationSet<T> locationSet = (ValidLocationSet<T>) validLocationSetCache.get(type);
 		if (locationSet == null) {
 			locationSet = new ValidLocationSetImpl<>(pos, world, type);
@@ -46,7 +46,7 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	}
 
 	@Override
-	public <T> ValidLocationSet<T> vaa$getValidLocationSet(final ValidLocationSetType<T> type, final int x, final int y, final int z, final WorldCache world) {
+	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final int x, final int y, final int z, final WorldCache world) {
 		ValidLocationSet<T> locationSet = (ValidLocationSet<T>) validLocationSetCache.get(type);
 		if (locationSet == null) {
 			final ChunkSectionPos pos = ChunkSectionPos.from(new BlockPos(x, y, z));

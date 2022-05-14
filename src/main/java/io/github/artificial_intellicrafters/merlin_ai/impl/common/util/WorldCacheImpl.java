@@ -17,22 +17,21 @@ import net.minecraft.world.chunk.ChunkSection;
 import java.util.Arrays;
 
 public class WorldCacheImpl extends ChunkCache implements WorldCache {
-	private static final int CACHE_SIZE = 8192;
-	private static final int CACHE_MASK = CACHE_SIZE - 1;
 	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(0, Integer.MAX_VALUE, 0));
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
 	private static final VoxelShape EMPTY = VoxelShapes.empty();
-	private final long[] keys = new long[CACHE_SIZE];
+	private final int cacheMask;
+	private final long[] keys;
 	private final BlockPos.Mutable mutable = new BlockPos.Mutable();
-	private final BlockState[] blockStates = new BlockState[CACHE_SIZE];
-	private final VoxelShape[] collisionShapes = new VoxelShape[CACHE_SIZE];
+	private final BlockState[] blockStates;
+	private final VoxelShape[] collisionShapes;
 
-	private int cacheHits = 0;
-	private int cacheMisses = 0;
-	private int cacheEvictions = 0;
-
-	public WorldCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos) {
+	public WorldCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
+		cacheMask = cacheSize - 1;
+		keys = new long[cacheSize];
+		blockStates = new BlockState[cacheSize];
+		collisionShapes = new VoxelShape[cacheSize];
 		Arrays.fill(keys, DEFAULT_KEY);
 	}
 
@@ -56,14 +55,11 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 		if (section == null) {
 			return type.universeInfo().getDefaultValue();
 		}
-		return ((PathingChunkSection) section).vaa$getValidLocationSet(type, x, y, z, this).get(x, y, z);
+		return ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this).get(x, y, z);
 	}
 
 	private void populateCache(final int x, final int y, final int z, final long idx, final int pos) {
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
-		if (keys[pos] != DEFAULT_KEY) {
-			cacheEvictions++;
-		}
 		if (chunk != null) {
 			final ChunkSection chunkSection = chunk.getSectionArray()[world.getSectionIndex(y)];
 			keys[pos] = idx;
@@ -88,12 +84,10 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 			return AIR;
 		} else {
 			final long idx = HashCommon.mix(BlockPos.asLong(x, y, z));
-			final int pos = (int) (idx & CACHE_MASK);
+			final int pos = (int) (idx & cacheMask);
 			if (keys[pos] == idx) {
-				cacheHits++;
 				return blockStates[pos];
 			}
-			cacheMisses++;
 			populateCache(x, y, z, idx, pos);
 			return blockStates[pos];
 		}
@@ -105,19 +99,13 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 			return EMPTY;
 		} else {
 			final long idx = HashCommon.mix(BlockPos.asLong(x, y, z));
-			final int pos = (int) (idx & CACHE_MASK);
+			final int pos = (int) (idx & cacheMask);
 			if (keys[pos] == idx) {
-				cacheHits++;
 				return collisionShapes[pos];
 			}
-			cacheMisses++;
 			populateCache(x, y, z, idx, pos);
 			return collisionShapes[pos];
 		}
-	}
-
-	public void stats() {
-		System.out.println("Hits: " + cacheHits + ", Misses: " + cacheMisses + ", Evictions: " + cacheEvictions);
 	}
 
 	@Override

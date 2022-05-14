@@ -6,7 +6,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public interface PathingChunkSection {
-	<T> ValidLocationSet<T> vaa$getValidLocationSet(ValidLocationSetType<T> type, ChunkSectionPos pos, WorldCache world);
+	<T> ValidLocationSet<T> merlin_ai$getValidLocationSet(ValidLocationSetType<T> type, ChunkSectionPos pos, WorldCache world);
 
-	<T> ValidLocationSet<T> vaa$getValidLocationSet(ValidLocationSetType<T> type, int x, int y, int z, WorldCache world);
+	<T> ValidLocationSet<T> merlin_ai$getValidLocationSet(ValidLocationSetType<T> type, int x, int y, int z, WorldCache world);
 }
