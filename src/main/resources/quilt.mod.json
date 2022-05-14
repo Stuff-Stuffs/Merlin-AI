@@ -1,25 +1,23 @@
 {
 	"schema_version": 1,
 	"quilt_loader": {
-		"group": "com.example",
-		"id": "example_mod",
+		"group": "io.github.artificial_intellicrafters",
+		"id": "merlin_ai",
 		"version": "${version}",
 		"metadata": {
-			"name": "Mod Name",
-			"description": "A short description of your mod.",
+			"name": "Merlin AI",
+			"description": "An open source AI Library",
 			"contributors": {
-				"Me!": "Owner"
 			},
 			"contact": {
-				"homepage": "https://example.com/",
-				"issues": "https://github.com/QuiltMC/quilt-template-mod/issues",
-				"sources": "https://github.com/QuiltMC/quilt-template-mod"
+				"issues": "https://github.com/Artificial-Intellicrafters/Merlin-AI/issues",
+				"sources": "https://github.com/Artificial-Intellicrafters/Merlin-AI"
 			},
 			"icon": "assets/example_mod/icon.png"
 		},
 		"intermediate_mappings": "net.fabricmc:intermediary",
 		"entrypoints": {
-			"init": "com.example.example_mod.ExampleMod"
+			"init": "io.github.artificial_intellicrafters.merlin_ai.common.MerlinAI"
 		},
 		"depends": [
 			{
@@ -36,5 +34,5 @@
 			}
 		]
 	},
-	"mixin": "example_mod.mixins.json"
+	"mixin": "merlin_ai.mixins.json"
 }
