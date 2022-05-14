@@ -1,6 +1,8 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
@@ -29,12 +31,12 @@ public class AIPather {
 	}
 
 	public AIPath calculatePath(final PathTarget pathTarget, final double max, final boolean partial) {
-		final WorldCache cache = WorldCache.create(world, aiEntity.getBlockPos().add(-128, -128, -128), aiEntity.getBlockPos().add(128, 128, 128));
+		final WorldCache cache = WorldCache.create(world, aiEntity.getBlockPos().add(-256, -256, -256), aiEntity.getBlockPos().add(256, 256, 256));
 		final AIPathNode start = nodeProducer.getStart(cache);
 		final StopWatch stopWatch = StopWatch.createStarted();
 		final double err = pathTarget.getRadius();
 		//TODO specialized heap implementation
-		final ObjectHeapPriorityQueue<AIPathNode> queue = new ObjectHeapPriorityQueue<>(Comparator.comparingDouble(i -> i.distToTarget));
+		final ObjectHeapPriorityQueue<AIPathNode> queue = new ObjectHeapPriorityQueue<>(Comparator.comparingDouble(i -> i.distToTarget + i.distance));
 		final LongSet visited = new LongOpenHashSet();
 		double bestDist = Double.POSITIVE_INFINITY;
 		AIPathNode best = null;
