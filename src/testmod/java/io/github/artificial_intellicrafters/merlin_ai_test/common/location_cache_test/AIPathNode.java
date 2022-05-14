@@ -6,9 +6,9 @@ public class AIPathNode {
     public final int z;
     public int nodeCount = 0;
     public double distToTarget = Float.MAX_VALUE;
-    public final double distance;
+    public double distance;
     public final Type type;
-    public final AIPathNode previous;
+    public AIPathNode previous;
     public final boolean walkable;
 
     public AIPathNode(int x, int y, int z, double distance, Type type, AIPathNode previous, boolean walkable) {

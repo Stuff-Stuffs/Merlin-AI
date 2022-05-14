@@ -28,7 +28,7 @@ public final class LocationCacheTest {
 			if (PATH_KEYBIND.wasPressed()) {
 				LAST_PATH = new AIPather(client.cameraEntity, client.world, new TestNodeProducer(client.cameraEntity, client.world, ONE_X_TWO_BASIC_LOCATION_SET_TYPE)).calculatePath(PathTarget.createBlockTarget(10, BlockPos.ORIGIN), 1000, true);
 				if (LAST_PATH != null) {
-					REMAINING_VISIBLE_TICKS = 600;
+					REMAINING_VISIBLE_TICKS = 6000;
 				}
 			}
 		});

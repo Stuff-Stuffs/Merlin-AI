@@ -30,7 +30,8 @@ public class TestNodeProducer implements NodeProducer {
 	@Override
 	public int getNeighbours(final AIPathNode root, final AIPathNode[] successors) {
 		int i = 0;
-		AIPathNode node = createBasic(root.x + 1, root.y, root.z, root);
+		AIPathNode node;
+		node = createBasic(root.x + 1, root.y, root.z, root);
 		if (node != null) {
 			successors[i++] = node;
 		}
@@ -47,15 +48,35 @@ public class TestNodeProducer implements NodeProducer {
 			successors[i++] = node;
 		}
 
+		//FALL DIAGONAL
+		if (root.type != AIPathNode.Type.AIR) {
+			node = createDoubleHeightChecked(root.x + 1, root.y - 1, root.z, root);
+			if (node != null) {
+				successors[i++] = node;
+			}
+			node = createDoubleHeightChecked(root.x - 1, root.y - 1, root.z, root);
+			if (node != null) {
+				successors[i++] = node;
+			}
+			node = createDoubleHeightChecked(root.x, root.y - 1, root.z + 1, root);
+			if (node != null) {
+				successors[i++] = node;
+			}
+			node = createDoubleHeightChecked(root.x, root.y - 1, root.z - 1, root);
+			if (node != null) {
+				successors[i++] = node;
+			}
+		}
+
 		//Jump
-		if (root.type == AIPathNode.Type.LAND || root.type == AIPathNode.Type.LIQUID) {
+		if (root.type != AIPathNode.Type.AIR) {
 			node = createAir(root.x, root.y + 1, root.z, root);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
-		////down
-		if (root.type == AIPathNode.Type.AIR || root.type == AIPathNode.Type.LIQUID) {
+		//down
+		if (root.type != AIPathNode.Type.LAND) {
 			node = createAuto(root.x, root.y - 1, root.z, root);
 			if (node != null) {
 				successors[i++] = node;
@@ -64,16 +85,25 @@ public class TestNodeProducer implements NodeProducer {
 		return i;
 	}
 
+	private AIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final AIPathNode prev) {
+		final BasicLocationType walkable = isWalkable(x, y + 1, z);
+		final BasicLocationType groundWalkable = isWalkable(x, y, z);
+		if (groundWalkable != BasicLocationType.CLOSED && walkable != BasicLocationType.CLOSED) {
+			return new AIPathNode(x, y, z, prev.distance + 1.25, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
+		}
+		return null;
+	}
+
 	private AIPathNode createAir(final int x, final int y, final int z, final AIPathNode prev) {
 		if (isWalkable(x, y, z) == BasicLocationType.OPEN) {
-			return new AIPathNode(x, y, z, prev.distance + 1.5, AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 0.75, AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
 
 	private AIPathNode createBasic(final int x, final int y, final int z, final AIPathNode prev) {
 		if (isWalkable(x, y, z) == BasicLocationType.GROUND) {
-			return new AIPathNode(x, y, z, prev.distance + 1, AIPathNode.Type.LAND, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 0.75, AIPathNode.Type.LAND, prev, true);
 		}
 		return null;
 	}
@@ -82,7 +112,7 @@ public class TestNodeProducer implements NodeProducer {
 		final BasicLocationType type = isWalkable(x, y, z);
 		if (type != BasicLocationType.CLOSED) {
 			final boolean ground = type == BasicLocationType.GROUND;
-			return new AIPathNode(x, y, z, prev.distance + (ground ? 1 : 1.5), ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + (ground ? 0.75 : 1.25), ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
