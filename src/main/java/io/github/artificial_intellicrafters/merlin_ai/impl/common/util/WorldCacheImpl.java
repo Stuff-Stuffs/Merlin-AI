@@ -19,7 +19,7 @@ import java.util.Arrays;
 public class WorldCacheImpl extends ChunkCache implements WorldCache {
 	private static final int CACHE_SIZE = 8192;
 	private static final int CACHE_MASK = CACHE_SIZE - 1;
-	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(~0, ~0, ~0));
+	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(0, Integer.MAX_VALUE, 0));
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
 	private static final VoxelShape EMPTY = VoxelShapes.empty();
 	private final long[] keys = new long[CACHE_SIZE];
@@ -46,6 +46,7 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 		}
 	}
 
+	@Override
 	public <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> type) {
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
 		if (chunk == null) {
@@ -81,6 +82,7 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 		}
 	}
 
+	@Override
 	public BlockState getBlockState(final int x, final int y, final int z) {
 		if (world.isOutOfHeightLimit(y)) {
 			return AIR;
@@ -97,6 +99,7 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 		}
 	}
 
+	@Override
 	public VoxelShape getCollisionShape(final int x, final int y, final int z) {
 		if (world.isOutOfHeightLimit(y)) {
 			return EMPTY;
