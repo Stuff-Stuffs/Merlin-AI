@@ -7,10 +7,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.CollisionView;
 import net.minecraft.world.World;
 
-public interface WorldCache extends BlockView, CollisionView {
+public interface WorldCache extends BlockView {
 	BlockState getBlockState(int x, int y, int z);
 
 	VoxelShape getCollisionShape(int x, int y, int z);
