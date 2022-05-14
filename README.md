@@ -2,4 +2,4 @@
 
 ## License
 
-This repository is licensed under the [MPL_v2.0](./LICENSE).
+This repository is licensed under the [MPL_2.0](./LICENSE).
