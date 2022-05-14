@@ -6,5 +6,6 @@ import org.quiltmc.qsl.base.api.entrypoint.client.ClientModInitializer;
 public class MerlinAITestClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient(final ModContainer mod) {
+		LocationCacheTest.init();
 	}
 }
