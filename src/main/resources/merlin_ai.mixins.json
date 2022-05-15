@@ -4,7 +4,8 @@
   "package": "io.github.artificial_intellicrafters.merlin_ai.impl.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "ChunkSectionMixin"
+    "ChunkSectionMixin",
+    "WorldMixin"
   ],
   "client": [
   ],

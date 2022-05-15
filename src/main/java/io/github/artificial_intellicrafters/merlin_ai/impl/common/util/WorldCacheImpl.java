@@ -1,5 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.PathingChunkSection;
@@ -35,6 +36,11 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 		Arrays.fill(keys, DEFAULT_KEY);
 	}
 
+	@Override
+	public World getDelegate() {
+		return world;
+	}
+
 	private Chunk getChunk(final int chunkX, final int chunkZ) {
 		final int k = chunkX - minX;
 		final int l = chunkZ - minZ;
@@ -55,7 +61,11 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 		if (section == null) {
 			return type.universeInfo().getDefaultValue();
 		}
-		return ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this).get(x, y, z);
+		final ValidLocationSet<T> set = ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this);
+		if (set == null) {
+			return type.universeInfo().getDefaultValue();
+		}
+		return set.get(x, y, z);
 	}
 
 	private void populateCache(final int x, final int y, final int z, final long idx, final int pos) {

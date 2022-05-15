@@ -10,6 +10,8 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 public interface WorldCache extends BlockView {
+	World getDelegate();
+
 	BlockState getBlockState(int x, int y, int z);
 
 	VoxelShape getCollisionShape(int x, int y, int z);

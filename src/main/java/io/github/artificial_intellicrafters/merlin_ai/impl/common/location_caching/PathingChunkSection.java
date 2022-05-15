@@ -4,9 +4,10 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
 import net.minecraft.util.math.ChunkSectionPos;
+import org.jetbrains.annotations.Nullable;
 
 public interface PathingChunkSection {
-	<T> ValidLocationSet<T> merlin_ai$getValidLocationSet(ValidLocationSetType<T> type, ChunkSectionPos pos, WorldCache world);
+	<T> @Nullable ValidLocationSet<T> merlin_ai$getValidLocationSet(ValidLocationSetType<T> type, ChunkSectionPos pos, WorldCache world);
 
-	<T> ValidLocationSet<T> merlin_ai$getValidLocationSet(ValidLocationSetType<T> type, int x, int y, int z, WorldCache world);
+	<T> @Nullable ValidLocationSet<T> merlin_ai$getValidLocationSet(ValidLocationSetType<T> type, int x, int y, int z, WorldCache world);
 }
