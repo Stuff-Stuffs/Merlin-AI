@@ -89,7 +89,7 @@ public class TestNodeProducer implements NodeProducer {
 		final BasicLocationType walkable = isWalkable(x, y + 1, z);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z);
 		if (groundWalkable != BasicLocationType.CLOSED && walkable != BasicLocationType.CLOSED) {
-			return new AIPathNode(x, y, z, prev.distance + 2, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 1, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
@@ -112,19 +112,12 @@ public class TestNodeProducer implements NodeProducer {
 		final BasicLocationType type = isWalkable(x, y, z);
 		if (type != BasicLocationType.CLOSED) {
 			final boolean ground = type == BasicLocationType.GROUND;
-			return new AIPathNode(x, y, z, prev.distance + 1, ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + (ground?10:1), ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
 
 	private BasicLocationType isWalkable(final int x, final int y, final int z) {
 		return shapeCache.getLocationType(x, y, z, locationSetType);
-	}
-
-	@Override
-	public AIPathNode get(final int x, final int y, final int z) {
-		final BlockPos pos = new BlockPos(x, y, z);
-		final boolean walk = shapeCache.getBlockState(pos.down()).hasSolidTopSurface(shapeCache, pos.down(), aiEntity);
-		return new AIPathNode(x, y, z, 0, walk ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, null, walk);
 	}
 }

@@ -6,6 +6,4 @@ public interface NodeProducer {
 	AIPathNode getStart(ShapeCache cache);
 
 	int getNeighbours(AIPathNode root, AIPathNode[] successors);
-
-	AIPathNode get(int x, int y, int z);
 }

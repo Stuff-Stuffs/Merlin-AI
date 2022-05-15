@@ -35,7 +35,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 			while (true) {
 				task = taskQueue.peek();
 				if (task == null) {
-					return;
+					break;
 				}
 				if (task.task().done()) {
 					taskQueue.poll();
@@ -44,7 +44,9 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 					break;
 				}
 			}
-			task.task().runIteration();
+			if (task != null) {
+				task.task().runIteration();
+			}
 		}
 		for (final AITask task : finished) {
 			task.runFinish();

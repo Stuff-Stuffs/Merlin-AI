@@ -1,8 +1,8 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
+import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
@@ -35,12 +35,12 @@ public class AIPather {
 		final double err = pathTarget.getRadius();
 		//TODO specialized heap implementation
 		final ObjectHeapPriorityQueue<AIPathNode> queue = new ObjectHeapPriorityQueue<>(Comparator.comparingDouble(i -> i.distToTarget + i.distance));
-		final LongSet visited = new LongOpenHashSet();
+		final Long2ReferenceMap<AIPathNode> visited = new Long2ReferenceOpenHashMap<>();
 		double bestDist = Double.POSITIVE_INFINITY;
 		AIPathNode best = null;
 		start.distToTarget = pathTarget.heuristic(start.x, start.y, start.z);
 		queue.enqueue(start);
-		visited.add(BlockPos.asLong(start.x, start.y, start.z));
+		visited.put(BlockPos.asLong(start.x, start.y, start.z), start);
 		while (!queue.isEmpty()) {
 			final AIPathNode current = queue.dequeue();
 			if (current.distance > max) {
@@ -64,12 +64,51 @@ public class AIPather {
 				return toPath(current);
 			}
 			final int count = nodeProducer.getNeighbours(current, successors);
+			AIPathNode prevSibling = current.next;
+			while (prevSibling != null) {
+				if (prevSibling.sibling != null) {
+					prevSibling = prevSibling.sibling;
+				} else {
+					break;
+				}
+			}
 			for (int i = 0; i < count; i++) {
 				final AIPathNode next = successors[i];
 				final long pos = BlockPos.asLong(next.x, next.y, next.z);
-				if (visited.add(pos)) {
+				final AIPathNode node = visited.putIfAbsent(pos, next);
+				if (node == null) {
+					if (prevSibling == null) {
+						current.next = next;
+					} else {
+						prevSibling.sibling = next;
+					}
+					prevSibling = next;
 					next.distToTarget = pathTarget.heuristic(next.x, next.y, next.z);
 					queue.enqueue(next);
+				} else {
+					if (next.distance + 0.1 < node.distance) {
+						visited.put(pos, next);
+						if (prevSibling == null) {
+							current.next = next;
+						} else {
+							prevSibling.sibling = next;
+						}
+						prevSibling = next;
+						final AIPathNode previous = node.previous;
+						if (previous != null) {
+							if (previous.next == node) {
+								previous.next = node.sibling;
+							} else {
+								AIPathNode cursor = previous.next;
+								while (cursor.sibling != node) {
+									cursor = cursor.sibling;
+								}
+								cursor.sibling = cursor.sibling.sibling;
+							}
+						}
+						next.distToTarget = pathTarget.heuristic(next.x, next.y, next.z);
+						queue.enqueue(next);
+					}
 				}
 			}
 		}
