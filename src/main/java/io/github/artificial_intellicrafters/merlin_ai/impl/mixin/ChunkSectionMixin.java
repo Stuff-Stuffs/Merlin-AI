@@ -4,9 +4,9 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutorWorld;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.PathingChunkSection;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.AnalyseChunkSectionAITask;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -22,8 +22,9 @@ import java.util.Map;
 
 @Mixin(ChunkSection.class)
 public class ChunkSectionMixin implements PathingChunkSection {
-	private @Unique
-	long modCount = 0;
+	@Unique
+	private long modCount = 0;
+	@Unique
 	private boolean cleared = true;
 	@Unique
 	private final Map<ValidLocationSetType<?>, ValidLocationSet<?>> validLocationSetCache = new Reference2ReferenceOpenHashMap<>();
@@ -40,17 +41,17 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	}
 
 	@Override
-	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final ChunkSectionPos pos, final WorldCache world) {
+	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final ChunkSectionPos pos, final ShapeCache world) {
 		final ValidLocationSet<T> locationSet = (ValidLocationSet<T>) validLocationSetCache.get(type);
 		if (locationSet == null) {
 			final AITaskExecutor executor = ((AITaskExecutorWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
 			final long l = modCount;
-			executor.submitTask(new AnalyseChunkSectionAITask(l, this::getModCount, type, pos, world, i -> {
+			executor.submitTask(new ValidLocationAnalysisChunkSectionAITTask(l, this::getModCount, type, pos, world, i -> {
 				if (l == modCount) {
 					validLocationSetCache.put(type, i);
+					cleared = false;
 				}
 			}));
-			cleared = false;
 			return null;
 		}
 		return locationSet;
@@ -61,18 +62,18 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	}
 
 	@Override
-	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final int x, final int y, final int z, final WorldCache world) {
+	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final int x, final int y, final int z, final ShapeCache world) {
 		final ValidLocationSet<T> locationSet = (ValidLocationSet<T>) validLocationSetCache.get(type);
 		if (locationSet == null) {
 			final ChunkSectionPos pos = ChunkSectionPos.from(new BlockPos(x, y, z));
 			final AITaskExecutor executor = ((AITaskExecutorWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
 			final long l = modCount;
-			executor.submitTask(new AnalyseChunkSectionAITask(l, this::getModCount, type, pos, world, i -> {
+			executor.submitTask(new ValidLocationAnalysisChunkSectionAITTask(l, this::getModCount, type, pos, world, i -> {
 				if (l == modCount) {
 					validLocationSetCache.put(type, i);
+					cleared = false;
 				}
 			}));
-			cleared = false;
 			return null;
 		}
 		return locationSet;

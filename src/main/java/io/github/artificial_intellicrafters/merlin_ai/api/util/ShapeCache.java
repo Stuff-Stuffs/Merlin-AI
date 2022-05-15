@@ -1,7 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.WorldCacheImpl;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -9,7 +9,8 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-public interface WorldCache extends BlockView {
+//TODO better name
+public interface ShapeCache extends BlockView {
 	World getDelegate();
 
 	BlockState getBlockState(int x, int y, int z);
@@ -48,11 +49,11 @@ public interface WorldCache extends BlockView {
 		return Math.max(Math.min(cacheSizeTarget, maxCacheSize), minCacheSize);
 	}
 
-	static WorldCache create(final World world, final BlockPos minPos, final BlockPos maxPos) {
+	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos) {
 		return create(world, minPos, maxPos, computeCacheSize(minPos, maxPos));
 	}
 
-	static WorldCache create(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
+	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		if (minPos.compareTo(maxPos) >= 0) {
 			throw new IllegalArgumentException("Argument minPos must be less than maxPos!");
 		}
@@ -60,6 +61,6 @@ public interface WorldCache extends BlockView {
 		if ((cacheSize & (cacheSize - 1)) != 0) {
 			throw new IllegalArgumentException("Cache size must be a power of 2!");
 		}
-		return new WorldCacheImpl(world, minPos, maxPos, cacheSize);
+		return new ShapeCacheImpl(world, minPos, maxPos, cacheSize);
 	}
 }

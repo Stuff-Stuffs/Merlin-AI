@@ -4,7 +4,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Unive
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
@@ -13,7 +13,7 @@ public class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final UniverseInfo<T> universeInfo;
 	private final long[] data;
 
-	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final WorldCache cache, final ValidLocationSetType<T> setType) {
+	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType) {
 		final ValidLocationClassifier<T> classifier = setType.classifier();
 		universeInfo = setType.universeInfo();
 		int universeSize = universeInfo.getUniverseSize();

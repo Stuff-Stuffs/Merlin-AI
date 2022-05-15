@@ -4,7 +4,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetTypeRegistry;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.*;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -57,7 +57,7 @@ public final class LocationCacheTest {
 			private static final Box FLOOR = new Box(0, -1, 0, 1, 0, 1);
 
 			@Override
-			public BasicLocationType validate(final int x, final int y, final int z, final WorldCache cache) {
+			public BasicLocationType validate(final int x, final int y, final int z, final ShapeCache cache) {
 				if (CollisionUtil.doesCollide(BOX.offset(x, y, z), cache)) {
 					return BasicLocationType.CLOSED;
 				}

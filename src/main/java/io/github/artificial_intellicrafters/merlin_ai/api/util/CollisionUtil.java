@@ -21,7 +21,7 @@ public final class CollisionUtil {
 		return new CuboidBlockIterator(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 
-	public static boolean doesCollide(final Box box, final WorldCache world) {
+	public static boolean doesCollide(final Box box, final ShapeCache world) {
 		final CuboidBlockIterator blockIterator = collisionArea(box);
 		final VoxelShape boxShape = VoxelShapes.cuboid(box);
 		do {

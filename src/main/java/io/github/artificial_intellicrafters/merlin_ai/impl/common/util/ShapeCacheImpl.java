@@ -2,7 +2,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.PathingChunkSection;
 import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.block.BlockState;
@@ -17,7 +17,7 @@ import net.minecraft.world.chunk.ChunkSection;
 
 import java.util.Arrays;
 
-public class WorldCacheImpl extends ChunkCache implements WorldCache {
+public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(0, Integer.MAX_VALUE, 0));
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
 	private static final VoxelShape EMPTY = VoxelShapes.empty();
@@ -27,7 +27,7 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 	private final BlockState[] blockStates;
 	private final VoxelShape[] collisionShapes;
 
-	public WorldCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
+	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
 		cacheMask = cacheSize - 1;
 		keys = new long[cacheSize];

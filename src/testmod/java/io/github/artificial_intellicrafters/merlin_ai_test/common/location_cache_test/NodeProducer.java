@@ -1,9 +1,9 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 
 public interface NodeProducer {
-	AIPathNode getStart(WorldCache cache);
+	AIPathNode getStart(ShapeCache cache);
 
 	int getNeighbours(AIPathNode root, AIPathNode[] successors);
 

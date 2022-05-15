@@ -1,7 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -10,7 +10,7 @@ public class TestNodeProducer implements NodeProducer {
 	private final Entity aiEntity;
 	private final World world;
 	private final ValidLocationSetType<BasicLocationType> locationSetType;
-	private WorldCache worldCache;
+	private ShapeCache shapeCache;
 
 	public TestNodeProducer(final Entity aiEntity, final World world, final ValidLocationSetType<BasicLocationType> locationSetType) {
 		this.aiEntity = aiEntity;
@@ -20,9 +20,9 @@ public class TestNodeProducer implements NodeProducer {
 
 
 	@Override
-	public AIPathNode getStart(final WorldCache cache) {
+	public AIPathNode getStart(final ShapeCache cache) {
 		final BlockPos pos = aiEntity.getBlockPos();
-		worldCache = cache;
+		shapeCache = cache;
 		final boolean walk = world.getBlockState(pos.down()).hasSolidTopSurface(world, pos.down(), aiEntity);
 		return new AIPathNode(pos.getX(), pos.getY(), pos.getZ(), 0, walk ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, null, walk);
 	}
@@ -118,13 +118,13 @@ public class TestNodeProducer implements NodeProducer {
 	}
 
 	private BasicLocationType isWalkable(final int x, final int y, final int z) {
-		return worldCache.getLocationType(x, y, z, locationSetType);
+		return shapeCache.getLocationType(x, y, z, locationSetType);
 	}
 
 	@Override
 	public AIPathNode get(final int x, final int y, final int z) {
 		final BlockPos pos = new BlockPos(x, y, z);
-		final boolean walk = worldCache.getBlockState(pos.down()).hasSolidTopSurface(worldCache, pos.down(), aiEntity);
+		final boolean walk = shapeCache.getBlockState(pos.down()).hasSolidTopSurface(shapeCache, pos.down(), aiEntity);
 		return new AIPathNode(x, y, z, 0, walk ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, null, walk);
 	}
 }

@@ -3,6 +3,8 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.task;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITask;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 
 public class SingleThreadedAITaskExecutor implements AITaskExecutor {
@@ -27,6 +29,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 	@Override
 	public void runTasks(final int maxMillis) {
 		final long startMillis = System.currentTimeMillis();
+		final List<AITask> finished = new ArrayList<>();
 		while (System.currentTimeMillis() - startMillis <= maxMillis) {
 			WrappedTask task;
 			while (true) {
@@ -36,11 +39,15 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				}
 				if (task.task().done()) {
 					taskQueue.poll();
+					finished.add(task.task());
 				} else {
 					break;
 				}
 			}
 			task.task().runIteration();
+		}
+		for (final AITask task : finished) {
+			task.runFinish();
 		}
 	}
 
