@@ -89,21 +89,21 @@ public class TestNodeProducer implements NodeProducer {
 		final BasicLocationType walkable = isWalkable(x, y + 1, z);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z);
 		if (groundWalkable != BasicLocationType.CLOSED && walkable != BasicLocationType.CLOSED) {
-			return new AIPathNode(x, y, z, prev.distance + 1.25, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 2, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
 
 	private AIPathNode createAir(final int x, final int y, final int z, final AIPathNode prev) {
 		if (isWalkable(x, y, z) == BasicLocationType.OPEN) {
-			return new AIPathNode(x, y, z, prev.distance + 0.75, AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 1, AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
 
 	private AIPathNode createBasic(final int x, final int y, final int z, final AIPathNode prev) {
 		if (isWalkable(x, y, z) == BasicLocationType.GROUND) {
-			return new AIPathNode(x, y, z, prev.distance + 0.75, AIPathNode.Type.LAND, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 1, AIPathNode.Type.LAND, prev, true);
 		}
 		return null;
 	}
@@ -112,7 +112,7 @@ public class TestNodeProducer implements NodeProducer {
 		final BasicLocationType type = isWalkable(x, y, z);
 		if (type != BasicLocationType.CLOSED) {
 			final boolean ground = type == BasicLocationType.GROUND;
-			return new AIPathNode(x, y, z, prev.distance + (ground ? 0.75 : 1.25), ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
+			return new AIPathNode(x, y, z, prev.distance + 1, ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
 		}
 		return null;
 	}
