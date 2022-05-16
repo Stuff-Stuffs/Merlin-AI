@@ -73,7 +73,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public boolean locationSetExists(final int x, final int y, final int z, final ValidLocationSetType<?> type) {
+	public boolean doesLocationSetExist(final int x, final int y, final int z, final ValidLocationSetType<?> type) {
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
 		if (chunk == null) {
 			return false;

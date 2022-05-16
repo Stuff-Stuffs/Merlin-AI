@@ -54,7 +54,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		final int z = pos.getMinZ();
 		boolean ready = true;
 		for (final ValidLocationSetType<?> dependency : type.dependencies()) {
-			if (!cache.locationSetExists(x,y,z, dependency)) {
+			if (!cache.doesLocationSetExist(x,y,z, dependency)) {
 				ready = false;
 				break;
 			}
