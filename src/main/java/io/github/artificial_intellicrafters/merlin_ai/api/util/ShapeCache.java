@@ -1,6 +1,8 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -8,6 +10,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 //TODO better name
 public interface ShapeCache extends BlockView {
@@ -21,7 +24,11 @@ public interface ShapeCache extends BlockView {
 		return getLocationType(pos.getX(), pos.getY(), pos.getZ(), validLocationSetType);
 	}
 
+	@Nullable ChunkSectionRegion getRegion(int x, int y, int z, ChunkSectionRegionType type);
+
 	<T> T getLocationType(int x, int y, int z, ValidLocationSetType<T> validLocationSetType);
+
+	boolean locationSetExists(int x, int y, int z, ValidLocationSetType<?> type);
 
 	static int computeCacheSize(final BlockPos minPos, final BlockPos maxPos) {
 		if (minPos.compareTo(maxPos) >= 0) {

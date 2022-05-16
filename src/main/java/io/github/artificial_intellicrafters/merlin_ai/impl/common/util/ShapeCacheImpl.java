@@ -1,9 +1,12 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.PathingChunkSection;
 import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -14,6 +17,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkCache;
 import net.minecraft.world.chunk.ChunkSection;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -68,6 +72,20 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		return set.get(x, y, z);
 	}
 
+	@Override
+	public boolean locationSetExists(final int x, final int y, final int z, final ValidLocationSetType<?> type) {
+		final Chunk chunk = getChunk(x >> 4, z >> 4);
+		if (chunk == null) {
+			return false;
+		}
+		final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+		if (section == null) {
+			return false;
+		}
+		final ValidLocationSet<?> set = ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this);
+		return set != null;
+	}
+
 	private void populateCache(final int x, final int y, final int z, final long idx, final int pos) {
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
 		if (chunk != null) {
@@ -116,6 +134,23 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 			populateCache(x, y, z, idx, pos);
 			return collisionShapes[pos];
 		}
+	}
+
+	@Override
+	public @Nullable ChunkSectionRegion getRegion(final int x, final int y, final int z, final ChunkSectionRegionType type) {
+		final Chunk chunk = getChunk(x >> 4, z >> 4);
+		if (chunk == null) {
+			return null;
+		}
+		final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+		if (section == null) {
+			return null;
+		}
+		final ChunkSectionRegions regions = ((PathingChunkSection) section).merlin_ai$getChunkSectionRegions(type, x, y, z, this);
+		if (regions == null) {
+			return null;
+		}
+		return regions.getRegion(x, y, z);
 	}
 
 	@Override

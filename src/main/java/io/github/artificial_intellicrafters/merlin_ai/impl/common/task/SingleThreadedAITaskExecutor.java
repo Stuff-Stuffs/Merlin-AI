@@ -46,6 +46,8 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 			}
 			if (task != null) {
 				task.task().runIteration();
+			} else {
+				break;
 			}
 		}
 		for (final AITask task : finished) {

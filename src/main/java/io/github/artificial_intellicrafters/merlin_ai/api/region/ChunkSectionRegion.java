@@ -1,5 +1,8 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.region;
 
+import org.jetbrains.annotations.ApiStatus;
+
+@ApiStatus.NonExtendable
 public interface ChunkSectionRegion {
 	int id();
 

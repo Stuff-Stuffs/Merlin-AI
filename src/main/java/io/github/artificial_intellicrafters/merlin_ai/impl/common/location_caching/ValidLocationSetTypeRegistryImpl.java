@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ValidLocationSetTypeRegistryImpl implements ValidLocationSetTypeRegistry {
+public final class ValidLocationSetTypeRegistryImpl implements ValidLocationSetTypeRegistry {
 	public static final ValidLocationSetTypeRegistryImpl INSTANCE = new ValidLocationSetTypeRegistryImpl();
 	private final Map<Identifier, ValidLocationSetTypeImpl<?>> registry = new HashMap<>();
 
@@ -20,7 +20,7 @@ public class ValidLocationSetTypeRegistryImpl implements ValidLocationSetTypeReg
 	@Override
 	public <T> void register(final UniverseInfo<T> universeInfo, final ValidLocationClassifier<T> classifier, final Class<T> typeClass, final Identifier id) {
 		if (registry.put(id, new ValidLocationSetTypeImpl<>(universeInfo, classifier, typeClass)) != null) {
-			throw new RuntimeException("Duplicate ValidLocationSetType Identifiers");
+			throw new RuntimeException("Duplicate ValidLocationSetTypes");
 		}
 	}
 

@@ -28,56 +28,56 @@ public class TestNodeProducer implements NodeProducer {
 	}
 
 	@Override
-	public int getNeighbours(final AIPathNode root, final AIPathNode[] successors) {
+	public int getNeighbours(final AIPathNode previous, final AIPathNode[] successors) {
 		int i = 0;
 		AIPathNode node;
-		node = createBasic(root.x + 1, root.y, root.z, root);
+		node = createBasic(previous.x + 1, previous.y, previous.z, previous);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(root.x - 1, root.y, root.z, root);
+		node = createBasic(previous.x - 1, previous.y, previous.z, previous);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(root.x, root.y, root.z + 1, root);
+		node = createBasic(previous.x, previous.y, previous.z + 1, previous);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(root.x, root.y, root.z - 1, root);
+		node = createBasic(previous.x, previous.y, previous.z - 1, previous);
 		if (node != null) {
 			successors[i++] = node;
 		}
 
 		//FALL DIAGONAL
-		if (root.type != AIPathNode.Type.AIR) {
-			node = createDoubleHeightChecked(root.x + 1, root.y - 1, root.z, root);
+		if (previous.type != AIPathNode.Type.AIR) {
+			node = createDoubleHeightChecked(previous.x + 1, previous.y - 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(root.x - 1, root.y - 1, root.z, root);
+			node = createDoubleHeightChecked(previous.x - 1, previous.y - 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(root.x, root.y - 1, root.z + 1, root);
+			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z + 1, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(root.x, root.y - 1, root.z - 1, root);
+			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z - 1, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 
 		//Jump
-		if (root.type != AIPathNode.Type.AIR) {
-			node = createAir(root.x, root.y + 1, root.z, root);
+		if (previous.type != AIPathNode.Type.AIR) {
+			node = createAir(previous.x, previous.y + 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 		//down
-		if (root.type != AIPathNode.Type.LAND) {
-			node = createAuto(root.x, root.y - 1, root.z, root);
+		if (previous.type != AIPathNode.Type.LAND) {
+			node = createAuto(previous.x, previous.y - 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}

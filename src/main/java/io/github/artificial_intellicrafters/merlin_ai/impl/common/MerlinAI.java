@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MerlinAI implements ModInitializer {
+	//Object to be used in to represent a full but not complete object
+	public static final Object PLACEHOLDER_OBJECT = new Object();
 	public static final String MOD_ID = "merlin_ai";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 

@@ -7,7 +7,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import net.minecraft.util.math.ChunkSectionPos;
 
-public class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
+public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final int mask;
 	private final int bitCount;
 	private final UniverseInfo<T> universeInfo;

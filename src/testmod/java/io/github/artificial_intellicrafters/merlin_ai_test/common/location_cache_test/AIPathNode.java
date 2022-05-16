@@ -8,8 +8,11 @@ public class AIPathNode {
 	public double distToTarget = Float.MAX_VALUE;
 	public double distance;
 	public final Type type;
+	//node before this on path from root node
 	public AIPathNode previous;
+	//a node after this on path from root node; other nodes after this can be found be inspecting the sibling field of next.
 	public AIPathNode next;
+	//linked list of nodes sharing same previous node.
 	public AIPathNode sibling;
 	public final boolean walkable;
 

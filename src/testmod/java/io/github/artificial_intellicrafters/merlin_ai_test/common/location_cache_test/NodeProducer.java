@@ -5,5 +5,5 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 public interface NodeProducer {
 	AIPathNode getStart(ShapeCache cache);
 
-	int getNeighbours(AIPathNode root, AIPathNode[] successors);
+	int getNeighbours(AIPathNode previous, AIPathNode[] successors);
 }

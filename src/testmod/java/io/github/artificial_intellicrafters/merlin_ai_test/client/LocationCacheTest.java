@@ -7,6 +7,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.*;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.option.KeyBind;
 import net.minecraft.particle.DustParticleEffect;
@@ -24,6 +25,7 @@ public final class LocationCacheTest {
 	private static int REMAINING_VISIBLE_TICKS = 0;
 
 	public static void init() {
+		KeyBindingHelper.registerKeyBinding(PATH_KEYBIND);
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
 				LAST_PATH = new AIPather(client.cameraEntity, client.world, new TestNodeProducer(client.cameraEntity, client.world, ONE_X_TWO_BASIC_LOCATION_SET_TYPE)).calculatePath(PathTarget.createBlockTarget(35, BlockPos.ORIGIN), 1000, true);
