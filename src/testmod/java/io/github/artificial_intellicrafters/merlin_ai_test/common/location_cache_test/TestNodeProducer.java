@@ -1,12 +1,14 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-public class TestNodeProducer implements NodeProducer {
+public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode<Entity>> {
 	private final Entity aiEntity;
 	private final World world;
 	private final ValidLocationSetType<BasicLocationType> locationSetType;
@@ -18,19 +20,54 @@ public class TestNodeProducer implements NodeProducer {
 		this.locationSetType = locationSetType;
 	}
 
+	private BasicAIPathNode<Entity> createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev) {
+		final BasicLocationType walkable = isWalkable(x, y + 1, z);
+		final BasicLocationType groundWalkable = isWalkable(x, y, z);
+		if (groundWalkable != BasicLocationType.CLOSED && walkable != BasicLocationType.CLOSED) {
+			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, walkable);
+		}
+		return null;
+	}
 
-	@Override
-	public AIPathNode getStart(final ShapeCache cache) {
-		final BlockPos pos = aiEntity.getBlockPos();
-		shapeCache = cache;
-		final boolean walk = world.getBlockState(pos.down()).hasSolidTopSurface(world, pos.down(), aiEntity);
-		return new AIPathNode(pos.getX(), pos.getY(), pos.getZ(), 0, walk ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, null, walk);
+	private BasicAIPathNode<Entity> createAir(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev) {
+		if (isWalkable(x, y, z) == BasicLocationType.OPEN) {
+			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, BasicLocationType.OPEN);
+		}
+		return null;
+	}
+
+	private BasicAIPathNode<Entity> createBasic(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev) {
+		if (isWalkable(x, y, z) == BasicLocationType.GROUND) {
+			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, BasicLocationType.GROUND);
+		}
+		return null;
+	}
+
+	private BasicAIPathNode<Entity> createAuto(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev) {
+		final BasicLocationType type = isWalkable(x, y, z);
+		if (type != BasicLocationType.CLOSED) {
+			final boolean ground = type == BasicLocationType.GROUND;
+			return new BasicAIPathNode<>(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN);
+		}
+		return null;
+	}
+
+	private BasicLocationType isWalkable(final int x, final int y, final int z) {
+		return shapeCache.getLocationType(x, y, z, locationSetType);
 	}
 
 	@Override
-	public int getNeighbours(final AIPathNode previous, final AIPathNode[] successors) {
+	public BasicAIPathNode<Entity> createStartNode(final ShapeCache cache, final Entity context) {
+		final BlockPos pos = aiEntity.getBlockPos();
+		shapeCache = cache;
+		final boolean walk = world.getBlockState(pos.down()).hasSolidTopSurface(world, pos.down(), aiEntity);
+		return new BasicAIPathNode<>(pos.getX(), pos.getY(), pos.getZ(), 0, walk ? BasicLocationType.GROUND : BasicLocationType.OPEN);
+	}
+
+	@Override
+	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode<Entity> previous, final Object[] successors) {
 		int i = 0;
-		AIPathNode node;
+		BasicAIPathNode<Entity> node;
 		node = createBasic(previous.x + 1, previous.y, previous.z, previous);
 		if (node != null) {
 			successors[i++] = node;
@@ -49,7 +86,7 @@ public class TestNodeProducer implements NodeProducer {
 		}
 
 		//FALL DIAGONAL
-		if (previous.type != AIPathNode.Type.AIR) {
+		if (previous.type != BasicLocationType.OPEN) {
 			node = createDoubleHeightChecked(previous.x + 1, previous.y - 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
@@ -69,55 +106,19 @@ public class TestNodeProducer implements NodeProducer {
 		}
 
 		//Jump
-		if (previous.type != AIPathNode.Type.AIR) {
+		if (previous.type != BasicLocationType.OPEN) {
 			node = createAir(previous.x, previous.y + 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 		//down
-		if (previous.type != AIPathNode.Type.LAND) {
+		if (previous.type != BasicLocationType.OPEN) {
 			node = createAuto(previous.x, previous.y - 1, previous.z, previous);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 		return i;
-	}
-
-	private AIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final AIPathNode prev) {
-		final BasicLocationType walkable = isWalkable(x, y + 1, z);
-		final BasicLocationType groundWalkable = isWalkable(x, y, z);
-		if (groundWalkable != BasicLocationType.CLOSED && walkable != BasicLocationType.CLOSED) {
-			return new AIPathNode(x, y, z, prev.distance + 1, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
-		}
-		return null;
-	}
-
-	private AIPathNode createAir(final int x, final int y, final int z, final AIPathNode prev) {
-		if (isWalkable(x, y, z) == BasicLocationType.OPEN) {
-			return new AIPathNode(x, y, z, prev.distance + 1, AIPathNode.Type.AIR, prev, true);
-		}
-		return null;
-	}
-
-	private AIPathNode createBasic(final int x, final int y, final int z, final AIPathNode prev) {
-		if (isWalkable(x, y, z) == BasicLocationType.GROUND) {
-			return new AIPathNode(x, y, z, prev.distance + 1, AIPathNode.Type.LAND, prev, true);
-		}
-		return null;
-	}
-
-	private AIPathNode createAuto(final int x, final int y, final int z, final AIPathNode prev) {
-		final BasicLocationType type = isWalkable(x, y, z);
-		if (type != BasicLocationType.CLOSED) {
-			final boolean ground = type == BasicLocationType.GROUND;
-			return new AIPathNode(x, y, z, prev.distance + (ground?10:1), ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
-		}
-		return null;
-	}
-
-	private BasicLocationType isWalkable(final int x, final int y, final int z) {
-		return shapeCache.getLocationType(x, y, z, locationSetType);
 	}
 }

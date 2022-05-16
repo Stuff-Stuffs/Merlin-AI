@@ -1,36 +1,39 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
-public class AIPath {
-    private final AIPathNode[] nodes;
-    private int index = 0;
+import java.util.List;
 
-    public AIPath(final AIPathNode[] nodes) {
-        this.nodes = nodes;
-    }
+public class AIPath<T, N extends AIPathNode<T>> {
+	private final Object[] nodes;
+	private int index = 0;
 
-    public boolean isFinished() {
-        return index >= nodes.length;
-    }
+	public AIPath(final List<N> nodes) {
+		this.nodes = nodes.toArray();
+	}
 
-    public void next() {
-        index++;
-        while (!isFinished() && nodes[index] == null) {
-            index++;
-        }
-    }
+	public boolean isFinished() {
+		return index >= nodes.length;
+	}
 
-    public AIPathNode getCurrent() {
-        if (!isFinished()) {
-            return nodes[index];
-        }
-        return nodes[nodes.length - 1];
-    }
+	public void next() {
+		index++;
+		while (!isFinished() && nodes[index] == null) {
+			index++;
+		}
+	}
 
-    @Environment(EnvType.CLIENT)
-    public AIPathNode[] getNodes() {
-        return nodes;
-    }
+	public N getCurrent() {
+		if (!isFinished()) {
+			return (N) nodes[index];
+		}
+		return (N) nodes[nodes.length - 1];
+	}
+
+	@Environment(EnvType.CLIENT)
+	public Object[] getNodes() {
+		return nodes;
+	}
 }
