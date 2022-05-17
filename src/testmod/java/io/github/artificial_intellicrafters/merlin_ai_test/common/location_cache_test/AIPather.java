@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class AIPather<T, N extends AIPathNode<T>> {
+public class AIPather<T, N extends AIPathNode<T, N>> {
 	private static final boolean DEBUG = QuiltLoader.isDevelopmentEnvironment();
 	private final Object[] successors = new Object[64];
 	private final World world;
@@ -169,6 +169,6 @@ public class AIPather<T, N extends AIPathNode<T>> {
 		return new AIPath<>(nodes);
 	}
 
-	private record PathInfo<T, N extends AIPathNode<T>>(int nodesConsidered, @Nullable AIPath<T, N> path) {
+	private record PathInfo<T, N extends AIPathNode<T, N>>(int nodesConsidered, @Nullable AIPath<T, N> path) {
 	}
 }

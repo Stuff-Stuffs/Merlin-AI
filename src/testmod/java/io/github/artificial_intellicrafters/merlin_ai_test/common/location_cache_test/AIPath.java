@@ -6,7 +6,7 @@ import net.fabricmc.api.Environment;
 
 import java.util.List;
 
-public final class AIPath<T, N extends AIPathNode<T>> {
+public final class AIPath<T, N extends AIPathNode<T,N>> {
 	private final Object[] nodes;
 	private int index = 0;
 
