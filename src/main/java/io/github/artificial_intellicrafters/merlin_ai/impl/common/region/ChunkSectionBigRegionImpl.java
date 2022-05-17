@@ -1,15 +1,14 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.region;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionClassifier;
 import it.unimi.dsi.fastutil.shorts.ShortIterator;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
 
-public class ChunkSectionRegionImpl implements ChunkSectionRegion {
+public class ChunkSectionBigRegionImpl implements ChunkSectionRegion {
 	private final int id;
 	private final ShortSet set;
 
-	public ChunkSectionRegionImpl(final int id, final ShortSet positions) {
+	public ChunkSectionBigRegionImpl(final int id, final ShortSet positions) {
 		this.id = id;
 		set = positions;
 	}
@@ -21,7 +20,7 @@ public class ChunkSectionRegionImpl implements ChunkSectionRegion {
 
 	@Override
 	public boolean contains(final int x, final int y, final int z) {
-		final short local = ChunkSectionRegionClassifier.packLocal(x & 15, y & 15, z & 15);
+		final short local = ChunkSectionRegion.packLocal(x & 15, y & 15, z & 15);
 		return set.contains(local);
 	}
 
@@ -30,7 +29,7 @@ public class ChunkSectionRegionImpl implements ChunkSectionRegion {
 		final ShortIterator iterator = set.iterator();
 		while (iterator.hasNext()) {
 			final short local = iterator.nextShort();
-			action.accept(ChunkSectionRegionClassifier.unpackLocalX(local), ChunkSectionRegionClassifier.unpackLocalY(local), ChunkSectionRegionClassifier.unpackLocalZ(local));
+			action.accept(ChunkSectionRegion.unpackLocalX(local), ChunkSectionRegion.unpackLocalY(local), ChunkSectionRegion.unpackLocalZ(local));
 		}
 	}
 }

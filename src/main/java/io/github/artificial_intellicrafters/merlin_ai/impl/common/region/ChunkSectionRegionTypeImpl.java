@@ -1,18 +1,19 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.region;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionClassifier;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 
 import java.util.Set;
 
-public final class ChunkSectionRegionTypeImpl implements ChunkSectionRegionType {
+public final class ChunkSectionRegionTypeImpl<T, N extends AIPathNode<T>> implements ChunkSectionRegionType<T, N> {
 	private final Set<ValidLocationSetType<?>> dependencies;
-	private final ChunkSectionRegionClassifier classifier;
+	private final NeighbourGetter<T, N> neighbourGetter;
 
-	public ChunkSectionRegionTypeImpl(final Set<ValidLocationSetType<?>> dependencies, final ChunkSectionRegionClassifier classifier) {
+	public ChunkSectionRegionTypeImpl(final Set<ValidLocationSetType<?>> dependencies, final NeighbourGetter<T, N> neighbourGetter) {
 		this.dependencies = dependencies;
-		this.classifier = classifier;
+		this.neighbourGetter = neighbourGetter;
 	}
 
 	@Override
@@ -21,7 +22,7 @@ public final class ChunkSectionRegionTypeImpl implements ChunkSectionRegionType 
 	}
 
 	@Override
-	public ChunkSectionRegionClassifier classifier() {
-		return classifier;
+	public NeighbourGetter<T, N> neighbourGetter() {
+		return neighbourGetter;
 	}
 }

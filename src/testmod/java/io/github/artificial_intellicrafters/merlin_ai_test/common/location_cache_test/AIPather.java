@@ -6,7 +6,6 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.PathingHeapQueue;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.time.StopWatch;
@@ -17,24 +16,25 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 public class AIPather<T, N extends AIPathNode<T>> {
 	private static final boolean DEBUG = QuiltLoader.isDevelopmentEnvironment();
 	private final Object[] successors = new Object[64];
-	private final Entity aiEntity;
 	private final World world;
 	private final NeighbourGetter<T, N> neighbourGetter;
+	private final Function<T, BlockPos> startingPositionRetriever;
 
-	public AIPather(final Entity aiEntity, final World world, final NeighbourGetter<T, N> neighbourGetter) {
-		this.aiEntity = aiEntity;
+	public AIPather(final World world, final NeighbourGetter<T, N> neighbourGetter, final Function<T, BlockPos> startingPositionRetriever) {
 		this.world = world;
 		this.neighbourGetter = neighbourGetter;
+		this.startingPositionRetriever = startingPositionRetriever;
 	}
 
-	public @Nullable AIPath<T,N> calculatePath(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
+	public @Nullable AIPath<T, N> calculatePath(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
 		if (DEBUG) {
 			final StopWatch stopWatch = StopWatch.createStarted();
-			final PathInfo<T,N> info = find(pathTarget, max, partial, context);
+			final PathInfo<T, N> info = find(pathTarget, max, partial, context);
 			stopWatch.stop();
 			final double v = stopWatch.getTime(TimeUnit.NANOSECONDS) / 1_000_000D;
 			System.out.println("Time: " + v);
@@ -46,9 +46,14 @@ public class AIPather<T, N extends AIPathNode<T>> {
 		}
 	}
 
-	private PathInfo<T,N> find(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
-		final ShapeCache cache = ShapeCache.create(world, aiEntity.getBlockPos().add(-256, -256, -256), aiEntity.getBlockPos().add(256, 256, 256));
-		final WrappedPathNode<T, N> start = wrap(neighbourGetter.createStartNode(cache, context), 1, pathTarget, null);
+	private PathInfo<T, N> find(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
+		final BlockPos startingPosition = startingPositionRetriever.apply(context);
+		final ShapeCache cache = ShapeCache.create(world, startingPosition.add(-256, -256, -256), startingPosition.add(256, 256, 256));
+		final N startNode = neighbourGetter.createStartNode(cache, startingPosition.getX(), startingPosition.getY(), startingPosition.getZ());
+		if (startNode == null) {
+			return new PathInfo<>(0, null);
+		}
+		final WrappedPathNode<T, N> start = wrap(startNode, 1, pathTarget, null);
 		//Heuristic must be below this value to be considered the end
 		final double err = pathTarget.getRadius();
 		//We need a specialized heap implementation so that we can remove object in the heap, not just the top

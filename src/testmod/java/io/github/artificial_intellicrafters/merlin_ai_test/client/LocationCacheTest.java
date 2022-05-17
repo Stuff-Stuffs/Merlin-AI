@@ -3,6 +3,7 @@ package io.github.artificial_intellicrafters.merlin_ai_test.client;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetTypeRegistry;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
@@ -22,6 +23,7 @@ import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
 
 public final class LocationCacheTest {
 	public static final ValidLocationSetType<BasicLocationType> ONE_X_TWO_BASIC_LOCATION_SET_TYPE;
+	public static final NeighbourGetter<Entity, BasicAIPathNode<Entity>> BASIC_NEIGHBOUR_GETTER;
 	public static final KeyBind PATH_KEYBIND = new KeyBind("merlin_ai.location_cache_test", GLFW.GLFW_KEY_F7, "misc");
 	private static AIPath<Entity, BasicAIPathNode<Entity>> LAST_PATH = null;
 	private static int REMAINING_VISIBLE_TICKS = 0;
@@ -30,7 +32,8 @@ public final class LocationCacheTest {
 		KeyBindingHelper.registerKeyBinding(PATH_KEYBIND);
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
-				LAST_PATH = new AIPather<>(client.cameraEntity, client.world, new TestNodeProducer(client.cameraEntity, client.world, ONE_X_TWO_BASIC_LOCATION_SET_TYPE)).calculatePath(PathTarget.createBlockTarget(35, BlockPos.ORIGIN), 1000, true, client.cameraEntity);
+				final AIPather<Entity, BasicAIPathNode<Entity>> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
+				LAST_PATH = pather.calculatePath(PathTarget.createBlockTarget(35, BlockPos.ORIGIN), 1000, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;
 				}
@@ -41,7 +44,7 @@ public final class LocationCacheTest {
 				final DustParticleEffect effect = new DustParticleEffect(new Vec3f(1, 0, 0), 1);
 				if (REMAINING_VISIBLE_TICKS % 10 == 0) {
 					for (final Object o : LAST_PATH.getNodes()) {
-						BasicAIPathNode<Entity> node = (BasicAIPathNode<Entity>) o;
+						final BasicAIPathNode<Entity> node = (BasicAIPathNode<Entity>) o;
 						context.world().addParticle(effect, node.x + 0.5, node.y + 0.5, node.z + 0.5, 0, 0, 0);
 					}
 				}
@@ -73,5 +76,6 @@ public final class LocationCacheTest {
 			}
 		}, BasicLocationType.class, new Identifier(MerlinAITest.MOD_ID, "basic_1x2"));
 		ONE_X_TWO_BASIC_LOCATION_SET_TYPE = ValidLocationSetTypeRegistry.INSTANCE.get(BasicLocationType.class, new Identifier(MerlinAITest.MOD_ID, "basic_1x2"));
+		BASIC_NEIGHBOUR_GETTER = new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE);
 	}
 }

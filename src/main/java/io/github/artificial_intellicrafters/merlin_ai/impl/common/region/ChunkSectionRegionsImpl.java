@@ -5,16 +5,16 @@ import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionReg
 import org.jetbrains.annotations.Nullable;
 
 public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
-	private final ChunkSectionRegionImpl[] regions;
+	private final ChunkSectionRegion[] regions;
 
-	public ChunkSectionRegionsImpl(ChunkSectionRegionImpl[] regions) {
+	public ChunkSectionRegionsImpl(final ChunkSectionRegion[] regions) {
 		this.regions = regions;
 	}
 
 	@Override
-	public @Nullable ChunkSectionRegion getRegion(int x, int y, int z) {
-		for (ChunkSectionRegionImpl region : regions) {
-			if(region.contains(x,y,z)) {
+	public @Nullable ChunkSectionRegion getRegion(final int x, final int y, final int z) {
+		for (final ChunkSectionRegion region : regions) {
+			if (region.contains(x, y, z)) {
 				return region;
 			}
 		}

@@ -1,40 +1,58 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.client;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.region.BasicRegionClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionTypeRegistry;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest;
-import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.BasicLocationType;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
+import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2IntMap;
+import it.unimi.dsi.fastutil.shorts.Short2IntOpenHashMap;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.option.KeyBind;
-import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.shape.BitSetVoxelSet;
 import org.lwjgl.glfw.GLFW;
 import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
 public final class RegionCacheTest {
-	public static final ChunkSectionRegionType BASIC_REGION_TYPE;
+	public static final ChunkSectionRegionType<Entity, BasicAIPathNode<Entity>> BASIC_REGION_TYPE;
 	public static final KeyBind REGION_KEYBIND = new KeyBind("merlin_ai.location_region_cache_test", GLFW.GLFW_KEY_F8, "misc");
+	private static final Int2ReferenceMap<BitSetVoxelSet> VOXEL_SETS = new Int2ReferenceOpenHashMap<>();
+	private static ChunkSectionPos DISPLAY_POS = null;
+	private static int DISPLAY_TICKS = 0;
 
 	public static void init() {
 		KeyBindingHelper.registerKeyBinding(REGION_KEYBIND);
 		ClientTickEvents.START.register(client -> {
+			if(DISPLAY_TICKS>0) {
+				DISPLAY_TICKS--;
+			}
 			if (REGION_KEYBIND.wasPressed()) {
 				final ChunkSectionPos pos = ChunkSectionPos.from(client.cameraEntity.getBlockPos());
 				final BlockPos minPos = pos.getMinPos();
-				final ShapeCache cache = ShapeCache.create(client.world, minPos, minPos.add(15, 15, 15));
+				final ShapeCache cache = ShapeCache.create(client.world, minPos.add(-15, -15, -15), minPos.add(16, 16, 16));
+				VOXEL_SETS.clear();
+				DISPLAY_POS = pos;
+				DISPLAY_TICKS = 600;
+				Int2IntMap counts = new Int2IntOpenHashMap();
 				for (int x = 0; x < 16; x++) {
 					for (int y = 0; y < 16; y++) {
 						for (int z = 0; z < 16; z++) {
@@ -43,87 +61,38 @@ public final class RegionCacheTest {
 							final int z0 = z + minPos.getZ();
 							final ChunkSectionRegion region = cache.getRegion(x0, y0, z0, BASIC_REGION_TYPE);
 							if (region != null) {
-								final Random random = new Random(HashCommon.murmurHash3(HashCommon.murmurHash3(region.id())));
-								final int i = MathHelper.hsvToRgb(random.nextFloat(), 1, 1);
-								final DustParticleEffect effect = new DustParticleEffect(new Vec3f(((i >> 16) & 0xFF) / 255.0F, ((i >> 8) & 0xFF) / 255.0F, ((i >> 0) & 0xFF) / 255.0F), 1);
-								client.world.addParticle(effect, x0 + 0.5, y0 + 0.5, z0 + 0.5, 0, 0, 0);
+								VOXEL_SETS.computeIfAbsent(region.id(), i -> new BitSetVoxelSet(16, 16, 16)).set(x, y, z);
+								counts.put(region.id(), counts.get(region.id())+1);
 							}
 						}
 					}
 				}
+				for (Int2IntMap.Entry entry : counts.int2IntEntrySet()) {
+					if(entry.getIntValue()<2) {
+						VOXEL_SETS.remove(entry.getIntKey());
+					}
+				}
+			}
+		});
+		WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+			if (DISPLAY_TICKS > 0 && DISPLAY_POS != null) {
+				final MatrixStack stack = context.matrixStack();
+				stack.push();
+				stack.translate(-context.camera().getPos().x, -context.camera().getPos().y, -context.camera().getPos().z);
+				stack.translate(DISPLAY_POS.getMinX(), DISPLAY_POS.getMinY(), DISPLAY_POS.getMinZ());
+				final VertexConsumer vertexConsumer = context.consumers().getBuffer(RenderLayer.getLines());
+				for (final Int2ReferenceMap.Entry<BitSetVoxelSet> entry : VOXEL_SETS.int2ReferenceEntrySet()) {
+					final Random random = new Random(HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getIntKey())));
+					final int colour = MathHelper.hsvToRgb(random.nextFloat(), 1, 1) | 0xFF000000;
+					entry.getValue().forEachBox((i, j, k, l, m, n) -> WorldRenderer.drawBox(stack, vertexConsumer, i, j, k, l, m, n, ((colour >> 16) & 0xFF) / 255.0F, ((colour >> 8) & 0xFF) / 255.0F, ((colour >> 0) & 0xFF) / 255.0F, 1), true);
+				}
+				stack.pop();
 			}
 		});
 	}
 
 	static {
-		final List<BasicRegionClassifier.SymmetricMovement> movements = new ArrayList<>();
-		movements.add(new BasicRegionClassifier.SymmetricMovement() {
-			@Override
-			public int xOff() {
-				return 1;
-			}
-
-			@Override
-			public int yOff() {
-				return 0;
-			}
-
-			@Override
-			public int zOff() {
-				return 0;
-			}
-
-			@Override
-			public boolean check(final int x, final int y, final int z, final ShapeCache cache) {
-				final BasicLocationType locationType = cache.getLocationType(x + 1, y, z, LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE);
-				return locationType == BasicLocationType.GROUND;
-			}
-
-			@Override
-			public boolean checkReverse(final int x, final int y, final int z, final ShapeCache cache) {
-				final BasicLocationType locationType = cache.getLocationType(x - 1, y, z, LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE);
-				return locationType == BasicLocationType.GROUND;
-			}
-
-			@Override
-			public boolean validStart(final int x, final int y, final int z, final ShapeCache cache) {
-				return cache.getLocationType(x, y, z, LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE) == BasicLocationType.GROUND;
-			}
-		});
-		movements.add(new BasicRegionClassifier.SymmetricMovement() {
-			@Override
-			public int xOff() {
-				return 0;
-			}
-
-			@Override
-			public int yOff() {
-				return 0;
-			}
-
-			@Override
-			public int zOff() {
-				return 1;
-			}
-
-			@Override
-			public boolean check(final int x, final int y, final int z, final ShapeCache cache) {
-				final BasicLocationType locationType = cache.getLocationType(x, y, z + 1, LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE);
-				return locationType == BasicLocationType.GROUND;
-			}
-
-			@Override
-			public boolean checkReverse(final int x, final int y, final int z, final ShapeCache cache) {
-				final BasicLocationType locationType = cache.getLocationType(x, y, z - 1, LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE);
-				return locationType == BasicLocationType.GROUND;
-			}
-
-			@Override
-			public boolean validStart(final int x, final int y, final int z, final ShapeCache cache) {
-				return cache.getLocationType(x, y, z, LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE) == BasicLocationType.GROUND;
-			}
-		});
-		ChunkSectionRegionTypeRegistry.INSTANCE.register(Set.of(LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE), new BasicRegionClassifier(movements), new Identifier(MerlinAITest.MOD_ID, "basic_test"));
-		BASIC_REGION_TYPE = ChunkSectionRegionTypeRegistry.INSTANCE.get(new Identifier(MerlinAITest.MOD_ID, "basic_test"));
+		ChunkSectionRegionTypeRegistry.INSTANCE.register(Set.of(LocationCacheTest.ONE_X_TWO_BASIC_LOCATION_SET_TYPE), LocationCacheTest.BASIC_NEIGHBOUR_GETTER, new Identifier(MerlinAITest.MOD_ID, "basic_test"));
+		BASIC_REGION_TYPE = ChunkSectionRegionTypeRegistry.INSTANCE.get(LocationCacheTest.BASIC_NEIGHBOUR_GETTER, new Identifier(MerlinAITest.MOD_ID, "basic_test"));
 	}
 }
