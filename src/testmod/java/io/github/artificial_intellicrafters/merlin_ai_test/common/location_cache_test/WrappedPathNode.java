@@ -3,7 +3,7 @@ package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cach
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import org.jetbrains.annotations.Nullable;
 
-public class WrappedPathNode<T, N extends AIPathNode<T>> {
+public class WrappedPathNode<T, N extends AIPathNode<T,N>> {
 	public final N delegate;
 	public final int nodeCount;
 	public final double distToTarget;
@@ -14,7 +14,7 @@ public class WrappedPathNode<T, N extends AIPathNode<T>> {
 	//linked list of nodes sharing same previous node.
 	public WrappedPathNode<T, N> sibling;
 
-	public WrappedPathNode(final N delegate, final int nodeCount, final double distToTarget, final WrappedPathNode<T, N> previous) {
+	public WrappedPathNode(final N delegate, final int nodeCount, final double distToTarget, final @Nullable WrappedPathNode<T, N> previous) {
 		this.delegate = delegate;
 		this.nodeCount = nodeCount;
 		this.distToTarget = distToTarget;
