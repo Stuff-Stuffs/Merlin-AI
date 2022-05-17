@@ -108,7 +108,7 @@ public class AIPather<T, N extends AIPathNode<T>> {
 					}
 					//The last node in the linked list is now the current neighbour
 					sibling = wrapped;
-					//Update the heuristic
+					//Enqueue node to be processed
 					queue.enqueue(wrapped);
 				} else {
 					//We check if this node faster to get to than the currently existing one,  I add a small constant because sometimes a path is every so slightly short(example 0.0001 shorter path).
@@ -141,7 +141,6 @@ public class AIPather<T, N extends AIPathNode<T>> {
 								cursor.sibling = cursor.sibling.sibling;
 							}
 						}
-						//update the heuristic
 						//Remove the old node from the heap
 						queue.removeFirstReference(node);
 						//Re-queue the node as its distance has changed;

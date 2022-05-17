@@ -1,14 +1,17 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.region;
 
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.NonExtendable
-public interface ChunkSectionRegion {
+public interface ChunkSectionRegion<T> {
 	int id();
 
 	boolean contains(int x, int y, int z);
 
 	void forEach(ForEach action);
+
+	LongSet getOutgoingEdges(T context);
 
 	interface ForEach {
 		void accept(int x, int y, int z);

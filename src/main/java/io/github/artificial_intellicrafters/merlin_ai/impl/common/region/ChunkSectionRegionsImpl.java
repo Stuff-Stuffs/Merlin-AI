@@ -5,6 +5,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionReg
 import org.jetbrains.annotations.Nullable;
 
 public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
+	public static final ChunkSectionRegions EMPTY = new ChunkSectionRegionsImpl(new ChunkSectionRegion[0]);
 	private final ChunkSectionRegion[] regions;
 
 	public ChunkSectionRegionsImpl(final ChunkSectionRegion[] regions) {

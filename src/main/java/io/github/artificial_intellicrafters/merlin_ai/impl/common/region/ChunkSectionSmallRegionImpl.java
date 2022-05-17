@@ -1,14 +1,22 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.region;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import net.minecraft.util.math.BlockPos;
 
-public class ChunkSectionSmallRegionImpl implements ChunkSectionRegion {
+public class ChunkSectionSmallRegionImpl<T> implements ChunkSectionRegion<T> {
 	private final int id;
 	private final short[] packed;
+	private final LongSet normalOutgoingEdges;
+	private final AIPathNode<T>[] contextSensitiveEdges;
 
-	public ChunkSectionSmallRegionImpl(final int id, final short[] packed) {
+	public ChunkSectionSmallRegionImpl(final int id, final short[] packed, final LongSet normalOutgoingEdges, final AIPathNode<T>[] contextSensitiveEdges) {
 		this.id = id;
 		this.packed = packed;
+		this.normalOutgoingEdges = normalOutgoingEdges;
+		this.contextSensitiveEdges = contextSensitiveEdges;
 	}
 
 	@Override
@@ -32,5 +40,16 @@ public class ChunkSectionSmallRegionImpl implements ChunkSectionRegion {
 		for (final short i : packed) {
 			action.accept(ChunkSectionRegion.unpackLocalX(i), ChunkSectionRegion.unpackLocalY(i), ChunkSectionRegion.unpackLocalZ(i));
 		}
+	}
+
+	@Override
+	public LongSet getOutgoingEdges(final T context) {
+		final LongSet set = new LongOpenHashSet(normalOutgoingEdges);
+		for (final AIPathNode<T> contextSensitiveEdge : contextSensitiveEdges) {
+			if (contextSensitiveEdge.linkPredicate.test(context)) {
+				set.add(BlockPos.asLong(contextSensitiveEdge.x, contextSensitiveEdge.y, contextSensitiveEdge.z));
+			}
+		}
+		return set;
 	}
 }
