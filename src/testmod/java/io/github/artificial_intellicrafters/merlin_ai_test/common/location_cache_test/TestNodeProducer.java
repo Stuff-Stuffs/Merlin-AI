@@ -18,7 +18,7 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 		final BasicLocationType walkable = isWalkable(x, y + 1, z, shapeCache);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z, shapeCache);
 		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
-			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, walkable);
+			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, groundWalkable);
 		}
 		return null;
 	}

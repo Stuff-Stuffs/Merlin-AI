@@ -84,7 +84,7 @@ public final class RegionCacheTest {
 				for (final Int2ReferenceMap.Entry<BitSetVoxelSet> entry : VOXEL_SETS.int2ReferenceEntrySet()) {
 					final Random random = new Random(HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getIntKey())));
 					final int colour = MathHelper.hsvToRgb(random.nextFloat(), 1, 1) | 0xFF000000;
-					entry.getValue().forEachBox((i, j, k, l, m, n) -> WorldRenderer.drawBox(stack, vertexConsumer, i, j, k, l, m, n, ((colour >> 16) & 0xFF) / 255.0F, ((colour >> 8) & 0xFF) / 255.0F, ((colour >> 0) & 0xFF) / 255.0F, 1), true);
+					entry.getValue().forEachBox((i, j, k, l, m, n) -> WorldRenderer.drawBox(stack, vertexConsumer, i+0.25, j+0.25, k+0.25, l-0.25, m-0.25, n-0.25, ((colour >> 16) & 0xFF) / 255.0F, ((colour >> 8) & 0xFF) / 255.0F, ((colour >> 0) & 0xFF) / 255.0F, 1), true);
 				}
 				stack.pop();
 			}
