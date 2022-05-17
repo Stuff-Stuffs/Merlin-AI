@@ -8,6 +8,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionReg
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITask;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.ChunkSectionBigRegionImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.ChunkSectionRegionsImpl;
@@ -219,7 +220,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		final int x = pos.getMinX();
 		final int y = pos.getMinY();
 		final int z = pos.getMinZ();
-		final Object[] successors = new Object[NeighbourGetter.MAX_SUCCESSORS];
+		final Object[] successors = new Object[AStar.MAX_SUCCESSORS];
 		final Short2ReferenceMap<N> nodes = new Short2ReferenceOpenHashMap<>();
 		final ShortPriorityQueue queue = new ShortArrayFIFOQueue();
 		final Short2ReferenceMap<ShortSet> edges = new Short2ReferenceOpenHashMap<>();
