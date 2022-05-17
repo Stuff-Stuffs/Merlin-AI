@@ -6,13 +6,15 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.util.math.BlockPos;
 
-public class ChunkSectionSmallRegionImpl<T> implements ChunkSectionRegion<T> {
+import java.util.List;
+
+public class ChunkSectionSmallRegionImpl<T, N extends AIPathNode<T, N>> implements ChunkSectionRegion<T, N> {
 	private final int id;
 	private final short[] packed;
 	private final LongSet normalOutgoingEdges;
-	private final AIPathNode<T>[] contextSensitiveEdges;
+	private final AIPathNode<T, N>[] contextSensitiveEdges;
 
-	public ChunkSectionSmallRegionImpl(final int id, final short[] packed, final LongSet normalOutgoingEdges, final AIPathNode<T>[] contextSensitiveEdges) {
+	public ChunkSectionSmallRegionImpl(final int id, final short[] packed, final LongSet normalOutgoingEdges, final AIPathNode<T, N>[] contextSensitiveEdges) {
 		this.id = id;
 		this.packed = packed;
 		this.normalOutgoingEdges = normalOutgoingEdges;
@@ -43,10 +45,10 @@ public class ChunkSectionSmallRegionImpl<T> implements ChunkSectionRegion<T> {
 	}
 
 	@Override
-	public LongSet getOutgoingEdges(final T context) {
+	public LongSet getOutgoingEdges(final T context, final List<N> previousNodes) {
 		final LongSet set = new LongOpenHashSet(normalOutgoingEdges);
-		for (final AIPathNode<T> contextSensitiveEdge : contextSensitiveEdges) {
-			if (contextSensitiveEdge.linkPredicate.test(context)) {
+		for (final AIPathNode<T, N> contextSensitiveEdge : contextSensitiveEdges) {
+			if (contextSensitiveEdge.linkPredicate == null || contextSensitiveEdge.linkPredicate.test(context, previousNodes)) {
 				set.add(BlockPos.asLong(contextSensitiveEdge.x, contextSensitiveEdge.y, contextSensitiveEdge.z));
 			}
 		}

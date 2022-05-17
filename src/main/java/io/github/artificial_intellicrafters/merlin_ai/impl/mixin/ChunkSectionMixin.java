@@ -1,12 +1,13 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.mixin;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
 import io.github.artificial_intellicrafters.merlin_ai.api.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
-import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutorWorld;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkRegionsAnalysisAITask;
@@ -37,7 +38,7 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	@Unique
 	private final Map<ValidLocationSetType<?>, Object> validLocationSetCache = new Reference2ReferenceOpenHashMap<>();
 	@Unique
-	private final Map<ChunkSectionRegionType, Object> regionsCache = new Reference2ReferenceOpenHashMap<>();
+	private final Map<ChunkSectionRegionType<?,?>, Object> regionsCache = new Reference2ReferenceOpenHashMap<>();
 
 	@Inject(at = @At("RETURN"), method = "setBlockState(IIILnet/minecraft/block/BlockState;Z)Lnet/minecraft/block/BlockState;")
 	private void clearCache(final int x, final int y, final int z, final BlockState state, final boolean lock, final CallbackInfoReturnable<BlockState> cir) {
@@ -55,7 +56,7 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	public <T> ValidLocationSet<T> merlin_ai$getValidLocationSet(final ValidLocationSetType<T> type, final ChunkSectionPos pos, final ShapeCache world) {
 		final Object locationSet = validLocationSetCache.get(type);
 		if (locationSet == null) {
-			final AITaskExecutor executor = ((AITaskExecutorWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
+			final AITaskExecutor executor = ((AIWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
 			final long l = modCount;
 			if (executor.submitTask(new ValidLocationAnalysisChunkSectionAITTask(l, this::getModCount, type, pos, world, i -> {
 				if (l == modCount) {
@@ -82,7 +83,7 @@ public class ChunkSectionMixin implements PathingChunkSection {
 		}
 		if (locationSet == null) {
 			final ChunkSectionPos pos = ChunkSectionPos.from(new BlockPos(x, y, z));
-			final AITaskExecutor executor = ((AITaskExecutorWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
+			final AITaskExecutor executor = ((AIWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
 			final long l = modCount;
 			if (executor.submitTask(new ValidLocationAnalysisChunkSectionAITTask(l, this::getModCount, type, pos, world, i -> {
 				if (l == modCount) {
@@ -98,14 +99,14 @@ public class ChunkSectionMixin implements PathingChunkSection {
 	}
 
 	@Override
-	public @Nullable ChunkSectionRegions merlin_ai$getChunkSectionRegions(final ChunkSectionRegionType type, final int x, final int y, final int z, final ShapeCache world) {
+	public <T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegions<T, N> merlin_ai$getChunkSectionRegions(final ChunkSectionRegionType<T, N> type, final int x, final int y, final int z, final ShapeCache world) {
 		final Object regions = regionsCache.get(type);
 		if (regions == MerlinAI.PLACEHOLDER_OBJECT) {
 			return null;
 		}
 		if (regions == null) {
 			final ChunkSectionPos pos = ChunkSectionPos.from(new BlockPos(x, y, z));
-			final AITaskExecutor executor = ((AITaskExecutorWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
+			final AITaskExecutor executor = ((AIWorld) world.getDelegate()).merlin_ai$getTaskExecutor();
 			final long l = modCount;
 			if (executor.submitTask(new ChunkRegionsAnalysisAITask(l, this::getModCount, type, pos, this, world, i -> {
 				if (l == modCount) {
@@ -117,7 +118,7 @@ public class ChunkSectionMixin implements PathingChunkSection {
 			}
 			return null;
 		}
-		return (ChunkSectionRegions) regions;
+		return (ChunkSectionRegions<T,N>) regions;
 	}
 
 	@Override

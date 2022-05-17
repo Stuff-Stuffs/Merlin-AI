@@ -35,8 +35,8 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 	private final ChunkSectionPos pos;
 	private final PathingChunkSection section;
 	private final ShapeCache cache;
-	private final Consumer<ChunkSectionRegions> completionConsumer;
-	private ChunkSectionRegions output = null;
+	private final Consumer<ChunkSectionRegions<?, ?>> completionConsumer;
+	private ChunkSectionRegions<?, ?> output = null;
 	private boolean finished = false;
 	private int lastX = 0;
 	private int lastY = 0;
@@ -44,7 +44,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 	private int count = 1;
 	private int order = 1;
 
-	public ChunkRegionsAnalysisAITask(final long modCount, final LongSupplier currentModCount, final ChunkSectionRegionType<?, ?> type, final ChunkSectionPos pos, final PathingChunkSection section, final ShapeCache cache, final Consumer<ChunkSectionRegions> completionConsumer) {
+	public ChunkRegionsAnalysisAITask(final long modCount, final LongSupplier currentModCount, final ChunkSectionRegionType<?, ?> type, final ChunkSectionPos pos, final PathingChunkSection section, final ShapeCache cache, final Consumer<ChunkSectionRegions<?, ?>> completionConsumer) {
 		this.modCount = modCount;
 		this.currentModCount = currentModCount;
 		this.type = type;
@@ -81,14 +81,14 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		}
 	}
 
-	private <T, N extends AIPathNode<T>> void regionify(final NeighbourGetter<T, N> neighbourGetter) {
+	private <T, N extends AIPathNode<T, N>> void regionify(final NeighbourGetter<T, N> neighbourGetter) {
 		final int x = pos.getMinX();
 		final int y = pos.getMinY();
 		final int z = pos.getMinZ();
 		final Short2ReferenceMap<List<N>> contextSensitiveAndOuterEdges = new Short2ReferenceOpenHashMap<>();
 		final Short2ReferenceMap<ShortSet> normalEdges = search(neighbourGetter, contextSensitiveAndOuterEdges);
 		if (normalEdges.isEmpty()) {
-			output = ChunkSectionRegionsImpl.EMPTY;
+			output = new ChunkSectionRegionsImpl<T, N>(new ChunkSectionRegion[0]);
 			return;
 		}
 		final Short2IntMap categorized = new Short2IntOpenHashMap(normalEdges.size());
@@ -121,7 +121,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 			}
 		}
 
-		final ChunkSectionRegion<T>[] regions = new ChunkSectionRegion[components.size()];
+		final ChunkSectionRegion<T, N>[] regions = new ChunkSectionRegion[components.size()];
 		final int minId = section.getNextRegionId();
 		int i = 0;
 		for (final Int2ReferenceMap.Entry<ShortSet> entry : components.int2ReferenceEntrySet()) {
@@ -143,7 +143,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 			i++;
 		}
 		section.setNextRegionId(minId + components.size() + 1);
-		output = new ChunkSectionRegionsImpl(regions);
+		output = new ChunkSectionRegionsImpl<>(regions);
 	}
 
 	private Int2ReferenceMap<ShortSet> stronglyConnectedComponents(final Short2ReferenceMap<ShortSet> edges, final Short2IntMap categorized) {
@@ -215,7 +215,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		}
 	}
 
-	private <T, N extends AIPathNode<T>> Short2ReferenceMap<ShortSet> search(final NeighbourGetter<T, N> getter, final Short2ReferenceMap<List<N>> contextSensitiveAndOuterEdges) {
+	private <T, N extends AIPathNode<T, N>> Short2ReferenceMap<ShortSet> search(final NeighbourGetter<T, N> getter, final Short2ReferenceMap<List<N>> contextSensitiveAndOuterEdges) {
 		final int x = pos.getMinX();
 		final int y = pos.getMinY();
 		final int z = pos.getMinZ();
@@ -235,7 +235,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 				ShortSet shorts = edges.get(key);
 				for (int i = 0; i < neighbours; i++) {
 					final N successor = (N) successors[i];
-					if (successor.contextSensitive || !ChunkSectionRegion.isLocal(successor.x - x, successor.y - y, successor.z - z)) {
+					if (successor.linkPredicate != null || !ChunkSectionRegion.isLocal(successor.x - x, successor.y - y, successor.z - z)) {
 						contextSensitiveAndOuterEdges.computeIfAbsent(key, k -> new ArrayList<>()).add(successor);
 						continue;
 					}
@@ -255,7 +255,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		return edges;
 	}
 
-	private <T, N extends AIPathNode<T>> void findNextOpen(final Short2ReferenceMap<N> occupied, final ShortPriorityQueue queue, final NeighbourGetter<T, N> neighbourGetter) {
+	private <T, N extends AIPathNode<T, N>> void findNextOpen(final Short2ReferenceMap<N> occupied, final ShortPriorityQueue queue, final NeighbourGetter<T, N> neighbourGetter) {
 		final int x = pos.getMinX();
 		final int y = pos.getMinY();
 		final int z = pos.getMinZ();

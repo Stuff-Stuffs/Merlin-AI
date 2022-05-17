@@ -1,17 +1,20 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.region;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.jetbrains.annotations.ApiStatus;
 
+import java.util.List;
+
 @ApiStatus.NonExtendable
-public interface ChunkSectionRegion<T> {
+public interface ChunkSectionRegion<T, N extends AIPathNode<T,N>> {
 	int id();
 
 	boolean contains(int x, int y, int z);
 
 	void forEach(ForEach action);
 
-	LongSet getOutgoingEdges(T context);
+	LongSet getOutgoingEdges(T context, List<N> previousNodes);
 
 	interface ForEach {
 		void accept(int x, int y, int z);

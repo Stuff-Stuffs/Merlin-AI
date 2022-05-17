@@ -7,41 +7,41 @@ import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNod
 import net.minecraft.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 
-public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode<Entity>> {
+public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode> {
 	private final ValidLocationSetType<BasicLocationType> locationSetType;
 
 	public TestNodeProducer(final ValidLocationSetType<BasicLocationType> locationSetType) {
 		this.locationSetType = locationSetType;
 	}
 
-	private BasicAIPathNode<Entity> createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev, final ShapeCache shapeCache) {
+	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
 		final BasicLocationType walkable = isWalkable(x, y + 1, z, shapeCache);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z, shapeCache);
 		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
-			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, groundWalkable);
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable);
 		}
 		return null;
 	}
 
-	private BasicAIPathNode<Entity> createAir(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev, final ShapeCache shapeCache) {
+	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
 		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN) {
-			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, BasicLocationType.OPEN);
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN);
 		}
 		return null;
 	}
 
-	private BasicAIPathNode<Entity> createBasic(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev, final ShapeCache shapeCache) {
+	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
 		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND) {
-			return new BasicAIPathNode<>(x, y, z, prev.cost + 1, BasicLocationType.GROUND);
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND);
 		}
 		return null;
 	}
 
-	private BasicAIPathNode<Entity> createAuto(final int x, final int y, final int z, final BasicAIPathNode<Entity> prev, final ShapeCache shapeCache) {
+	private BasicAIPathNode createAuto(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
 		final BasicLocationType type = isWalkable(x, y, z, shapeCache);
 		if (type != BasicLocationType.CLOSED) {
 			final boolean ground = type == BasicLocationType.GROUND;
-			return new BasicAIPathNode<>(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN);
+			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN);
 		}
 		return null;
 	}
@@ -51,18 +51,18 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	}
 
 	@Override
-	public @Nullable BasicAIPathNode<Entity> createStartNode(final ShapeCache cache, final int x, final int y, final int z) {
+	public @Nullable BasicAIPathNode createStartNode(final ShapeCache cache, final int x, final int y, final int z) {
 		final BasicLocationType locationType = cache.getLocationType(x, y, z, locationSetType);
 		if (locationType == BasicLocationType.CLOSED) {
 			return null;
 		}
-		return new BasicAIPathNode<>(x, y, z, 0, locationType);
+		return new BasicAIPathNode(x, y, z, 0, locationType);
 	}
 
 	@Override
-	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode<Entity> previous, final Object[] successors) {
+	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode previous, final Object[] successors) {
 		int i = 0;
-		BasicAIPathNode<Entity> node;
+		BasicAIPathNode node;
 		node = createBasic(previous.x + 1, previous.y, previous.z, previous, cache);
 		if (node != null) {
 			successors[i++] = node;

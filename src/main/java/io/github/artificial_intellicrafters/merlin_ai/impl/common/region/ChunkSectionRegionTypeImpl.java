@@ -7,7 +7,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionReg
 
 import java.util.Set;
 
-public final class ChunkSectionRegionTypeImpl<T, N extends AIPathNode<T>> implements ChunkSectionRegionType<T, N> {
+public final class ChunkSectionRegionTypeImpl<T, N extends AIPathNode<T, N>> implements ChunkSectionRegionType<T, N> {
 	private final Set<ValidLocationSetType<?>> dependencies;
 	private final NeighbourGetter<T, N> neighbourGetter;
 

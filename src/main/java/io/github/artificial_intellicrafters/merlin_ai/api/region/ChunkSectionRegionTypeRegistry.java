@@ -12,7 +12,7 @@ import java.util.Set;
 public interface ChunkSectionRegionTypeRegistry {
 	ChunkSectionRegionTypeRegistry INSTANCE = ChunkSectionRegionTypeRegistryImpl.INSTANCE;
 
-	void register(Set<ValidLocationSetType<?>> dependencies, NeighbourGetter<?, ?> neighbourGetter, Identifier id);
+	<T, N extends AIPathNode<T, N>> void register(Set<ValidLocationSetType<?>> dependencies, NeighbourGetter<T, N> neighbourGetter, Identifier id);
 
-	<T, N extends AIPathNode<T>> @Nullable ChunkSectionRegionType<T, N> get(NeighbourGetter<T, N> neighbourGetter, Identifier id);
+	<T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegionType<T, N> get(NeighbourGetter<T, N> neighbourGetter, Identifier id);
 }

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.ApiStatus;
 import java.util.Set;
 
 @ApiStatus.NonExtendable
-public interface ChunkSectionRegionType<T, N extends AIPathNode<T>> {
+public interface ChunkSectionRegionType<T, N extends AIPathNode<T, N>> {
 	Set<ValidLocationSetType<?>> dependencies();
 
 	NeighbourGetter<T, N> neighbourGetter();

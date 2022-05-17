@@ -11,8 +11,6 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.shorts.Short2IntMap;
-import it.unimi.dsi.fastutil.shorts.Short2IntOpenHashMap;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.option.KeyBind;
@@ -33,7 +31,7 @@ import java.util.Random;
 import java.util.Set;
 
 public final class RegionCacheTest {
-	public static final ChunkSectionRegionType<Entity, BasicAIPathNode<Entity>> BASIC_REGION_TYPE;
+	public static final ChunkSectionRegionType<Entity, BasicAIPathNode> BASIC_REGION_TYPE;
 	public static final KeyBind REGION_KEYBIND = new KeyBind("merlin_ai.location_region_cache_test", GLFW.GLFW_KEY_F8, "misc");
 	private static final Int2ReferenceMap<BitSetVoxelSet> VOXEL_SETS = new Int2ReferenceOpenHashMap<>();
 	private static ChunkSectionPos DISPLAY_POS = null;
@@ -42,7 +40,7 @@ public final class RegionCacheTest {
 	public static void init() {
 		KeyBindingHelper.registerKeyBinding(REGION_KEYBIND);
 		ClientTickEvents.START.register(client -> {
-			if(DISPLAY_TICKS>0) {
+			if (DISPLAY_TICKS > 0) {
 				DISPLAY_TICKS--;
 			}
 			if (REGION_KEYBIND.wasPressed()) {
@@ -52,23 +50,23 @@ public final class RegionCacheTest {
 				VOXEL_SETS.clear();
 				DISPLAY_POS = pos;
 				DISPLAY_TICKS = 600;
-				Int2IntMap counts = new Int2IntOpenHashMap();
+				final Int2IntMap counts = new Int2IntOpenHashMap();
 				for (int x = 0; x < 16; x++) {
 					for (int y = 0; y < 16; y++) {
 						for (int z = 0; z < 16; z++) {
 							final int x0 = x + minPos.getX();
 							final int y0 = y + minPos.getY();
 							final int z0 = z + minPos.getZ();
-							final ChunkSectionRegion region = cache.getRegion(x0, y0, z0, BASIC_REGION_TYPE);
+							final ChunkSectionRegion<Entity, BasicAIPathNode> region = cache.getRegion(x0, y0, z0, BASIC_REGION_TYPE);
 							if (region != null) {
 								VOXEL_SETS.computeIfAbsent(region.id(), i -> new BitSetVoxelSet(16, 16, 16)).set(x, y, z);
-								counts.put(region.id(), counts.get(region.id())+1);
+								counts.put(region.id(), counts.get(region.id()) + 1);
 							}
 						}
 					}
 				}
-				for (Int2IntMap.Entry entry : counts.int2IntEntrySet()) {
-					if(entry.getIntValue()<2) {
+				for (final Int2IntMap.Entry entry : counts.int2IntEntrySet()) {
+					if (entry.getIntValue() < 2) {
 						VOXEL_SETS.remove(entry.getIntKey());
 					}
 				}
@@ -84,7 +82,7 @@ public final class RegionCacheTest {
 				for (final Int2ReferenceMap.Entry<BitSetVoxelSet> entry : VOXEL_SETS.int2ReferenceEntrySet()) {
 					final Random random = new Random(HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getIntKey())));
 					final int colour = MathHelper.hsvToRgb(random.nextFloat(), 1, 1) | 0xFF000000;
-					entry.getValue().forEachBox((i, j, k, l, m, n) -> WorldRenderer.drawBox(stack, vertexConsumer, i+0.25, j+0.25, k+0.25, l-0.25, m-0.25, n-0.25, ((colour >> 16) & 0xFF) / 255.0F, ((colour >> 8) & 0xFF) / 255.0F, ((colour >> 0) & 0xFF) / 255.0F, 1), true);
+					entry.getValue().forEachBox((i, j, k, l, m, n) -> WorldRenderer.drawBox(stack, vertexConsumer, i + 0.25, j + 0.25, k + 0.25, l - 0.25, m - 0.25, n - 0.25, ((colour >> 16) & 0xFF) / 255.0F, ((colour >> 8) & 0xFF) / 255.0F, ((colour >> 0) & 0xFF) / 255.0F, 1), true);
 				}
 				stack.pop();
 			}

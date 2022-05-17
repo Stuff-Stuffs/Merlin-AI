@@ -23,16 +23,16 @@ import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
 
 public final class LocationCacheTest {
 	public static final ValidLocationSetType<BasicLocationType> ONE_X_TWO_BASIC_LOCATION_SET_TYPE;
-	public static final NeighbourGetter<Entity, BasicAIPathNode<Entity>> BASIC_NEIGHBOUR_GETTER;
+	public static final NeighbourGetter<Entity, BasicAIPathNode> BASIC_NEIGHBOUR_GETTER;
 	public static final KeyBind PATH_KEYBIND = new KeyBind("merlin_ai.location_cache_test", GLFW.GLFW_KEY_F7, "misc");
-	private static AIPath<Entity, BasicAIPathNode<Entity>> LAST_PATH = null;
+	private static AIPath<Entity, BasicAIPathNode> LAST_PATH = null;
 	private static int REMAINING_VISIBLE_TICKS = 0;
 
 	public static void init() {
 		KeyBindingHelper.registerKeyBinding(PATH_KEYBIND);
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
-				final AIPather<Entity, BasicAIPathNode<Entity>> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
+				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
 				LAST_PATH = pather.calculatePath(PathTarget.createBlockTarget(35, BlockPos.ORIGIN), 1000, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;
@@ -44,7 +44,7 @@ public final class LocationCacheTest {
 				final DustParticleEffect effect = new DustParticleEffect(new Vec3f(1, 0, 0), 1);
 				if (REMAINING_VISIBLE_TICKS % 10 == 0) {
 					for (final Object o : LAST_PATH.getNodes()) {
-						final BasicAIPathNode<Entity> node = (BasicAIPathNode<Entity>) o;
+						final BasicAIPathNode node = (BasicAIPathNode) o;
 						context.world().addParticle(effect, node.x + 0.5, node.y + 0.5, node.z + 0.5, 0, 0, 0);
 					}
 				}
