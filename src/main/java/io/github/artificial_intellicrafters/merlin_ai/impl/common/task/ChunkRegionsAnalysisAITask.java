@@ -232,7 +232,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 			while (!queue.isEmpty()) {
 				final short key = queue.dequeueShort();
 				final N node = nodes.get(key);
-				final int neighbours = getter.getNeighbours(cache, node, successors);
+				final int neighbours = getter.getNeighbours(cache, node, i -> Double.POSITIVE_INFINITY, successors);
 				ShortSet shorts = edges.get(key);
 				for (int i = 0; i < neighbours; i++) {
 					final N successor = (N) successors[i];

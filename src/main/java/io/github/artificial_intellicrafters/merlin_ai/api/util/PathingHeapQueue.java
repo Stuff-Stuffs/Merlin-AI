@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 
+//TODO maybe replace this with a Pairing Heap?
 class PathingHeapQueue<K extends AStar.WrappedPathNode<?>> {
 	private int size = 0;
 	private Object[] heap = new Object[0];

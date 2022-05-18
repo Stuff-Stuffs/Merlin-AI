@@ -47,7 +47,7 @@ public class AIPather<T, N extends AIPathNode<T, N>> {
 		if (startingNode == null) {
 			return new PathInfo<>(0, null);
 		}
-		final AStar.PathInfo<N> path = AStar.findPath(startingNode, context, node -> BlockPos.asLong(node.x, node.y, node.z), (previous, context1, successors) -> neighbourGetter.getNeighbours(cache, previous, successors), node -> node.cost, node -> pathTarget.heuristic(node.x, node.y, node.z), pathTarget.getRadius(), max, partial);
+		final AStar.PathInfo<N> path = AStar.findPath(startingNode, context, node -> BlockPos.asLong(node.x, node.y, node.z), (previous, context1, costGetter, successors) -> neighbourGetter.getNeighbours(cache, previous, costGetter, successors), node -> node.cost, node -> pathTarget.heuristic(node.x, node.y, node.z), pathTarget.getRadius(), max, partial);
 		if (path.path() == null) {
 			return new PathInfo<>(path.nodesConsidered(), null);
 		} else {

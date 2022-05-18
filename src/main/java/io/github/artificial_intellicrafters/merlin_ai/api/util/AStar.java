@@ -15,13 +15,20 @@ public final class AStar {
 
 	public static <T, C> PathInfo<T> findPath(final T start, final C context, final ToLongFunction<T> keyGetter, final NeighbourGetter<T, C> neighbourGetter, final ToDoubleFunction<T> cost, final ToDoubleFunction<T> heuristic, final double error, final double maxCost, final boolean partial) {
 		final Object[] successors = new Object[MAX_SUCCESSORS];
-		final PathingHeapQueue<WrappedPathNode<T>> queue = new PathingHeapQueue<>(Comparator.comparingDouble(i -> i.distToTarget + cost.applyAsDouble(i.delegate)));
+		final PathingHeapQueue<WrappedPathNode<T>> queue = new PathingHeapQueue<>(Comparator.comparingDouble(i -> i.heuristicDistance + cost.applyAsDouble(i.delegate)));
 		final Long2ReferenceMap<WrappedPathNode<T>> visited = new Long2ReferenceOpenHashMap<>();
 		double bestDist = Double.POSITIVE_INFINITY;
 		WrappedPathNode<T> best = null;
 		final WrappedPathNode<T> wrappedStart = wrap(start, 1, heuristic, null);
 		queue.enqueue(wrappedStart);
 		visited.put(keyGetter.applyAsLong(start), wrappedStart);
+		final CostGetter costGetter = key -> {
+			final WrappedPathNode<T> node = visited.get(key);
+			if (node == null) {
+				return Double.POSITIVE_INFINITY;
+			}
+			return cost.applyAsDouble(node.delegate);
+		};
 		//While there is more nodes to visit
 		while (!queue.isEmpty()) {
 			final WrappedPathNode<T> current = queue.dequeue();
@@ -30,8 +37,8 @@ public final class AStar {
 				continue;
 			}
 			//Is the node the best node so far
-			if (current.distToTarget < bestDist) {
-				bestDist = current.distToTarget;
+			if (current.heuristicDistance < bestDist) {
+				bestDist = current.heuristicDistance;
 				best = current;
 			}
 			//Is the node at the goal
@@ -39,17 +46,7 @@ public final class AStar {
 				return createPath(visited.size(), current);
 			}
 			//Get adjacent nodes, fill the array with them, return how many neighbours were found
-			final int count = neighbourGetter.getNeighbours(current.delegate, context, successors);
-			//The last node in the linked list formed by AIPathNode.sibling, this is the list of nodes directly after the current one
-			WrappedPathNode<T> sibling = current.next;
-			//If sibling is null we don't need to find the end of the linked list, as it doesn't exist
-			while (sibling != null) {
-				if (sibling.sibling != null) {
-					sibling = sibling.sibling;
-				} else {
-					break;
-				}
-			}
+			final int count = neighbourGetter.getNeighbours(current.delegate, context, costGetter, successors);
 			//For each neighbour found
 			for (int i = 0; i < count; i++) {
 				final T next = (T) successors[i];
@@ -58,15 +55,6 @@ public final class AStar {
 				//Will return null if this is the first time we see it
 				final WrappedPathNode<T> node = visited.putIfAbsent(pos, wrapped);
 				if (node == null) {
-					if (sibling == null) {
-						//If the current node has no next node, put the current neighbour as the first in the linked list
-						current.next = wrapped;
-					} else {
-						//If the current node has a next node, put the current neighbour at the end of the linked list of next nodes
-						sibling.sibling = wrapped;
-					}
-					//The last node in the linked list is now the current neighbour
-					sibling = wrapped;
 					//Enqueue node to be processed
 					queue.enqueue(wrapped);
 				} else {
@@ -75,33 +63,10 @@ public final class AStar {
 					if (cost.applyAsDouble(next) + 0.1 < cost.applyAsDouble(node.delegate)) {
 						//This node is better, replace the current one at this position
 						visited.put(pos, wrapped);
-						if (sibling == null) {
-							//If the current node has no next node, put the current neighbour as the first in the linked list
-							current.next = wrapped;
-						} else {
-							//If the current node has a next node, put the current neighbour at the end of the linked list of next nodes
-							sibling.sibling = wrapped;
-						}
-						sibling = wrapped;
-						//Find the node before the old node that we replaced
-						final WrappedPathNode<T> previous = node.previous;
-						//This should only be null if we are replacing the root node, which shouldn't happen.
-						if (previous != null) {
-							//if the node getting replaced is the head of the linked list, simply replace it
-							if (previous.next == node) {
-								previous.next = node.sibling;
-							} else {
-								//Otherwise, walk the linked list until the node getting replaced is found
-								WrappedPathNode<T> cursor = previous.next;
-								while (cursor.sibling != node) {
-									cursor = cursor.sibling;
-								}
-								//Remove the node
-								cursor.sibling = cursor.sibling.sibling;
-							}
-						}
+
 						//Remove the old node from the heap
 						queue.removeFirstReference(node);
+
 						//Re-queue the node as its distance has changed;
 						queue.enqueue(wrapped);
 					}
@@ -133,7 +98,7 @@ public final class AStar {
 	static final class WrappedPathNode<T> {
 		public final T delegate;
 		public final int nodeCount;
-		public final double distToTarget;
+		public final double heuristicDistance;
 		//node before this on path from root node
 		public final @Nullable WrappedPathNode<T> previous;
 		//a node after this on path from root node; other nodes after this can be found be inspecting the sibling field of next.
@@ -142,16 +107,20 @@ public final class AStar {
 		public WrappedPathNode<T> sibling;
 		public int index = -1;
 
-		public WrappedPathNode(final T delegate, final int nodeCount, final double distToTarget, final @Nullable WrappedPathNode<T> previous) {
+		public WrappedPathNode(final T delegate, final int nodeCount, final double heuristicDistance, final @Nullable WrappedPathNode<T> previous) {
 			this.delegate = delegate;
 			this.nodeCount = nodeCount;
-			this.distToTarget = distToTarget;
+			this.heuristicDistance = heuristicDistance;
 			this.previous = previous;
 		}
 	}
 
 	public interface NeighbourGetter<T, C> {
-		int getNeighbours(T previous, C context, Object[] successors);
+		int getNeighbours(T previous, C context, CostGetter costGetter, Object[] successors);
+	}
+
+	public interface CostGetter {
+		double cost(long key);
 	}
 
 	private AStar() {

@@ -12,6 +12,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final int bitCount;
 	private final UniverseInfo<T> universeInfo;
 	private final long[] data;
+	private final ValidLocationSetType<T> type;
 
 	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType) {
 		final ValidLocationClassifier<T> classifier = setType.classifier();
@@ -44,6 +45,12 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 				}
 			}
 		}
+		type = setType;
+	}
+
+	@Override
+	public ValidLocationSetType<T> type() {
+		return type;
 	}
 
 	@Override

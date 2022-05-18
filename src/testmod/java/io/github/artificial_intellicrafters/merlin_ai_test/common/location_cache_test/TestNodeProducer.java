@@ -2,9 +2,11 @@ package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cach
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
 public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode> {
@@ -14,32 +16,32 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 		this.locationSetType = locationSetType;
 	}
 
-	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
+	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		final BasicLocationType walkable = isWalkable(x, y + 1, z, shapeCache);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z, shapeCache);
-		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
+		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable);
 		}
 		return null;
 	}
 
-	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
-		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN) {
+	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN);
 		}
 		return null;
 	}
 
-	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
-		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND) {
+	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND);
 		}
 		return null;
 	}
 
-	private BasicAIPathNode createAuto(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache) {
+	private BasicAIPathNode createAuto(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		final BasicLocationType type = isWalkable(x, y, z, shapeCache);
-		if (type != BasicLocationType.CLOSED) {
+		if (type != BasicLocationType.CLOSED && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
 			final boolean ground = type == BasicLocationType.GROUND;
 			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN);
 		}
@@ -60,41 +62,41 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	}
 
 	@Override
-	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode previous, final Object[] successors) {
+	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode previous, final AStar.CostGetter costGetter, final Object[] successors) {
 		int i = 0;
 		BasicAIPathNode node;
-		node = createBasic(previous.x + 1, previous.y, previous.z, previous, cache);
+		node = createBasic(previous.x + 1, previous.y, previous.z, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(previous.x - 1, previous.y, previous.z, previous, cache);
+		node = createBasic(previous.x - 1, previous.y, previous.z, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(previous.x, previous.y, previous.z + 1, previous, cache);
+		node = createBasic(previous.x, previous.y, previous.z + 1, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(previous.x, previous.y, previous.z - 1, previous, cache);
+		node = createBasic(previous.x, previous.y, previous.z - 1, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
 
 		//FALL DIAGONAL
 		if (previous.type == BasicLocationType.GROUND) {
-			node = createDoubleHeightChecked(previous.x + 1, previous.y - 1, previous.z, previous, cache);
+			node = createDoubleHeightChecked(previous.x + 1, previous.y - 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(previous.x - 1, previous.y - 1, previous.z, previous, cache);
+			node = createDoubleHeightChecked(previous.x - 1, previous.y - 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z + 1, previous, cache);
+			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z + 1, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z - 1, previous, cache);
+			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z - 1, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
@@ -102,14 +104,14 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 
 		//Jump
 		if (previous.type == BasicLocationType.GROUND) {
-			node = createAir(previous.x, previous.y + 1, previous.z, previous, cache);
+			node = createAir(previous.x, previous.y + 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 		//down
 		if (previous.type == BasicLocationType.OPEN) {
-			node = createAuto(previous.x, previous.y - 1, previous.z, previous, cache);
+			node = createAuto(previous.x, previous.y - 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}

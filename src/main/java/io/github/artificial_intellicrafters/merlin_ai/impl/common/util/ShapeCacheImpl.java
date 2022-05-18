@@ -3,6 +3,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 import io.github.artificial_intellicrafters.merlin_ai.api.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
@@ -30,6 +31,8 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private final BlockPos.Mutable mutable = new BlockPos.Mutable();
 	private final BlockState[] blockStates;
 	private final VoxelShape[] collisionShapes;
+	private final long[] locationKeys;
+	private final ValidLocationSet<?>[] locationSets;
 
 	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
@@ -37,6 +40,9 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		keys = new long[cacheSize];
 		blockStates = new BlockState[cacheSize];
 		collisionShapes = new VoxelShape[cacheSize];
+		Arrays.fill(keys, DEFAULT_KEY);
+		locationKeys = new long[cacheSize];
+		locationSets = new ValidLocationSet[cacheSize];
 		Arrays.fill(keys, DEFAULT_KEY);
 	}
 
@@ -57,19 +63,24 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 
 	@Override
 	public <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> type) {
+		final long idx = BlockPos.asLong(x >> 4, y >> 4, z >> 4);
+		final int pos = (int) (idx) & cacheMask;
+		if (locationKeys[pos] == idx && locationSets[pos].type() == type) {
+			return (T) locationSets[pos].get(x, y, z);
+		}
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
-		if (chunk == null) {
-			return type.universeInfo().getDefaultValue();
+		if (chunk != null) {
+			final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+			if (section != null) {
+				final ValidLocationSet<T> set = ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this);
+				if (set != null) {
+					locationKeys[pos] = idx;
+					locationSets[pos] = set;
+					return set.get(x, y, z);
+				}
+			}
 		}
-		final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-		if (section == null) {
-			return type.universeInfo().getDefaultValue();
-		}
-		final ValidLocationSet<T> set = ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this);
-		if (set == null) {
-			return type.universeInfo().getDefaultValue();
-		}
-		return set.get(x, y, z);
+		return type.universeInfo().getDefaultValue();
 	}
 
 	@Override
@@ -137,7 +148,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public @Nullable ChunkSectionRegion getRegion(final int x, final int y, final int z, final ChunkSectionRegionType type) {
+	public <T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegion<T, N> getRegion(final int x, final int y, final int z, final ChunkSectionRegionType<T, N> type) {
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
 		if (chunk == null) {
 			return null;
@@ -146,7 +157,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		if (section == null) {
 			return null;
 		}
-		final ChunkSectionRegions regions = ((PathingChunkSection) section).merlin_ai$getChunkSectionRegions(type, x, y, z, this);
+		final ChunkSectionRegions<T, N> regions = ((PathingChunkSection) section).merlin_ai$getChunkSectionRegions(type, x, y, z, this);
 		if (regions == null) {
 			return null;
 		}
