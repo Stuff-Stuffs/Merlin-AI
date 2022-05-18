@@ -16,13 +16,10 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.option.KeyBind;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.*;
 import net.minecraft.util.shape.BitSetVoxelSet;
 import org.lwjgl.glfw.GLFW;
 import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
@@ -79,10 +76,17 @@ public final class RegionCacheTest {
 				stack.translate(-context.camera().getPos().x, -context.camera().getPos().y, -context.camera().getPos().z);
 				stack.translate(DISPLAY_POS.getMinX(), DISPLAY_POS.getMinY(), DISPLAY_POS.getMinZ());
 				final VertexConsumer vertexConsumer = context.consumers().getBuffer(RenderLayer.getLines());
+				final Matrix4f model = stack.peek().getModel();
+				final Matrix3f normalMat = stack.peek().getNormal();
 				for (final Int2ReferenceMap.Entry<BitSetVoxelSet> entry : VOXEL_SETS.int2ReferenceEntrySet()) {
 					final Random random = new Random(HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getIntKey())));
 					final int colour = MathHelper.hsvToRgb(random.nextFloat(), 1, 1) | 0xFF000000;
-					entry.getValue().forEachBox((i, j, k, l, m, n) -> WorldRenderer.drawBox(stack, vertexConsumer, i + 0.25, j + 0.25, k + 0.25, l - 0.25, m - 0.25, n - 0.25, ((colour >> 16) & 0xFF) / 255.0F, ((colour >> 8) & 0xFF) / 255.0F, ((colour >> 0) & 0xFF) / 255.0F, 1), true);
+					entry.getValue().forEachEdge((i, j, k, l, m, n) -> {
+						final Vec3f normal = new Vec3f(i - l, j - m, k - n);
+						normal.normalize();
+						vertexConsumer.vertex(model, i, j, k).color(colour >> 16 & 255, colour >> 8 & 255, colour & 255, 255).normal(normalMat, -normal.getX(), -normal.getY(), -normal.getZ()).next();
+						vertexConsumer.vertex(model, l, m, n).color(colour >> 16 & 255, colour >> 8 & 255, colour & 255, 255).normal(normalMat, -normal.getX(), -normal.getY(), -normal.getZ()).next();
+					}, true);
 				}
 				stack.pop();
 			}
