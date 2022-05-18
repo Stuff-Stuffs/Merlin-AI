@@ -32,7 +32,7 @@ public final class CollisionUtil {
 				continue;
 			}
 			final VoxelShape voxelShape = world.getCollisionShape(x, y, z);
-			if (voxelShape != EMPTY) {
+			if (voxelShape != EMPTY && !voxelShape.isEmpty()) {
 				if (voxelShape == FULL_CUBE) {
 					if (box.intersects(x, y, z, x + 1, y + 1, z + 1)) {
 						return true;
