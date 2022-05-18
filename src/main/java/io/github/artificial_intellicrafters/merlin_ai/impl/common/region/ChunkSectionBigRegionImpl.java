@@ -8,8 +8,6 @@ import it.unimi.dsi.fastutil.shorts.ShortIterator;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.List;
-
 public class ChunkSectionBigRegionImpl<T, N extends AIPathNode<T, N>> implements ChunkSectionRegion<T, N> {
 	private final int id;
 	private final ShortSet set;
@@ -44,10 +42,10 @@ public class ChunkSectionBigRegionImpl<T, N extends AIPathNode<T, N>> implements
 	}
 
 	@Override
-	public LongSet getOutgoingEdges(final T context, final List<N> previousNodes) {
+	public LongSet getOutgoingEdges(final T context, final N previousNode) {
 		final LongSet set = new LongOpenHashSet(normalOutgoingEdges);
 		for (final AIPathNode<T, N> contextSensitiveEdge : contextSensitiveEdges) {
-			if (contextSensitiveEdge.linkPredicate == null || contextSensitiveEdge.linkPredicate.test(context, previousNodes)) {
+			if (contextSensitiveEdge.linkPredicate == null || contextSensitiveEdge.linkPredicate.test(context, previousNode)) {
 				set.add(BlockPos.asLong(contextSensitiveEdge.x, contextSensitiveEdge.y, contextSensitiveEdge.z));
 			}
 		}

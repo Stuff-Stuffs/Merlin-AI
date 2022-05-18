@@ -20,21 +20,21 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 		final BasicLocationType walkable = isWalkable(x, y + 1, z, shapeCache);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z, shapeCache);
 		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
-			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable);
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable, prev);
 		}
 		return null;
 	}
 
 	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
-			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN);
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN, prev);
 		}
 		return null;
 	}
 
 	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
-			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND);
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND, prev);
 		}
 		return null;
 	}
@@ -43,7 +43,7 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 		final BasicLocationType type = isWalkable(x, y, z, shapeCache);
 		if (type != BasicLocationType.CLOSED && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
 			final boolean ground = type == BasicLocationType.GROUND;
-			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN);
+			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN, prev);
 		}
 		return null;
 	}
@@ -58,7 +58,7 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 		if (locationType == BasicLocationType.CLOSED) {
 			return null;
 		}
-		return new BasicAIPathNode(x, y, z, 0, locationType);
+		return new BasicAIPathNode(x, y, z, 0, locationType, null);
 	}
 
 	@Override

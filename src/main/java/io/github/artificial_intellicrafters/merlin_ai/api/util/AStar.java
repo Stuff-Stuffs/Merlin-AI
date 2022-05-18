@@ -7,19 +7,20 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 
 public final class AStar {
 	public static final int MAX_SUCCESSORS = 64;
 
-	public static <T, C> PathInfo<T> findPath(final T start, final C context, final ToLongFunction<T> keyGetter, final NeighbourGetter<T, C> neighbourGetter, final ToDoubleFunction<T> cost, final ToDoubleFunction<T> heuristic, final double error, final double maxCost, final boolean partial) {
+	public static <T, C> PathInfo<T> findPath(final T start, final C context, final ToLongFunction<T> keyGetter, final NeighbourGetter<T, C> neighbourGetter, final Function<T, @Nullable T> previousNodeGetter, final ToDoubleFunction<T> cost, final ToDoubleFunction<T> heuristic, final double error, final double maxCost, final boolean partial) {
 		final Object[] successors = new Object[MAX_SUCCESSORS];
 		final PathingHeapQueue<WrappedPathNode<T>> queue = new PathingHeapQueue<>(Comparator.comparingDouble(i -> i.heuristicDistance + cost.applyAsDouble(i.delegate)));
 		final Long2ReferenceMap<WrappedPathNode<T>> visited = new Long2ReferenceOpenHashMap<>();
 		double bestDist = Double.POSITIVE_INFINITY;
 		WrappedPathNode<T> best = null;
-		final WrappedPathNode<T> wrappedStart = wrap(start, 1, heuristic, null);
+		final WrappedPathNode<T> wrappedStart = wrap(start, 1, heuristic);
 		queue.enqueue(wrappedStart);
 		visited.put(keyGetter.applyAsLong(start), wrappedStart);
 		final CostGetter costGetter = key -> {
@@ -43,7 +44,7 @@ public final class AStar {
 			}
 			//Is the node at the goal
 			if (heuristic.applyAsDouble(current.delegate) < error) {
-				return createPath(visited.size(), current);
+				return createPath(visited.size(), current, previousNodeGetter);
 			}
 			//Get adjacent nodes, fill the array with them, return how many neighbours were found
 			final int count = neighbourGetter.getNeighbours(current.delegate, context, costGetter, successors);
@@ -51,7 +52,7 @@ public final class AStar {
 			for (int i = 0; i < count; i++) {
 				final T next = (T) successors[i];
 				final long pos = keyGetter.applyAsLong(next);
-				final WrappedPathNode<T> wrapped = wrap(next, current.nodeCount + 1, heuristic, current);
+				final WrappedPathNode<T> wrapped = wrap(next, current.nodeCount + 1, heuristic);
 				//Will return null if this is the first time we see it
 				final WrappedPathNode<T> node = visited.putIfAbsent(pos, wrapped);
 				if (node == null) {
@@ -73,17 +74,23 @@ public final class AStar {
 				}
 			}
 		}
-		return best == null ? new PathInfo<>(visited.size(), null) : partial ? createPath(visited.size(), best) : new PathInfo<>(visited.size(), null);
+		return best == null ? new PathInfo<>(visited.size(), null) : partial ? createPath(visited.size(), best, previousNodeGetter) : new PathInfo<>(visited.size(), null);
 	}
 
-	private static <T> PathInfo<T> createPath(final int considered, WrappedPathNode<T> node) {
-		final List<T> list = new ArrayList<>(node.nodeCount);
-		for (int i = 0; i < node.nodeCount; i++) {
+	private static <T> PathInfo<T> createPath(final int considered, final WrappedPathNode<T> wrapped, final Function<T, @Nullable T> previousNodeGetter) {
+		final List<T> list = new ArrayList<>(wrapped.nodeCount);
+		for (int i = 0; i < wrapped.nodeCount; i++) {
 			list.add(null);
 		}
-		while (node != null) {
-			list.set(node.nodeCount - 1, node.delegate);
-			node = node.previous;
+		T node = wrapped.delegate;
+		int i = wrapped.nodeCount - 1;
+		while (node != null && i >= 0) {
+			list.set(i, node);
+			i--;
+			node = previousNodeGetter.apply(node);
+		}
+		if (i != 0) {
+			throw new RuntimeException("Invalid previousNodeGetter!");
 		}
 		return new PathInfo<>(considered, list);
 	}
@@ -91,27 +98,20 @@ public final class AStar {
 	public record PathInfo<T>(int nodesConsidered, @Nullable List<T> path) {
 	}
 
-	private static <T> WrappedPathNode<T> wrap(final T delegate, final int nodeCount, final ToDoubleFunction<T> heuristic, @Nullable final WrappedPathNode<T> previous) {
-		return new WrappedPathNode<>(delegate, nodeCount, heuristic.applyAsDouble(delegate), previous);
+	private static <T> WrappedPathNode<T> wrap(final T delegate, final int nodeCount, final ToDoubleFunction<T> heuristic) {
+		return new WrappedPathNode<>(delegate, nodeCount, heuristic.applyAsDouble(delegate));
 	}
 
 	static final class WrappedPathNode<T> {
 		public final T delegate;
 		public final int nodeCount;
 		public final double heuristicDistance;
-		//node before this on path from root node
-		public final @Nullable WrappedPathNode<T> previous;
-		//a node after this on path from root node; other nodes after this can be found be inspecting the sibling field of next.
-		public WrappedPathNode<T> next;
-		//linked list of nodes sharing same previous node.
-		public WrappedPathNode<T> sibling;
 		public int index = -1;
 
-		public WrappedPathNode(final T delegate, final int nodeCount, final double heuristicDistance, final @Nullable WrappedPathNode<T> previous) {
+		public WrappedPathNode(final T delegate, final int nodeCount, final double heuristicDistance) {
 			this.delegate = delegate;
 			this.nodeCount = nodeCount;
 			this.heuristicDistance = heuristicDistance;
-			this.previous = previous;
 		}
 	}
 

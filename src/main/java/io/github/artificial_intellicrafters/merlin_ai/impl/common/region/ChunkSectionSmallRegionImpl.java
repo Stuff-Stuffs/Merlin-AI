@@ -45,10 +45,10 @@ public class ChunkSectionSmallRegionImpl<T, N extends AIPathNode<T, N>> implemen
 	}
 
 	@Override
-	public LongSet getOutgoingEdges(final T context, final List<N> previousNodes) {
+	public LongSet getOutgoingEdges(final T context, N previousNode) {
 		final LongSet set = new LongOpenHashSet(normalOutgoingEdges);
 		for (final AIPathNode<T, N> contextSensitiveEdge : contextSensitiveEdges) {
-			if (contextSensitiveEdge.linkPredicate == null || contextSensitiveEdge.linkPredicate.test(context, previousNodes)) {
+			if (contextSensitiveEdge.linkPredicate == null || contextSensitiveEdge.linkPredicate.test(context, previousNode)) {
 				set.add(BlockPos.asLong(contextSensitiveEdge.x, contextSensitiveEdge.y, contextSensitiveEdge.z));
 			}
 		}

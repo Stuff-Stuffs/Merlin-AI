@@ -14,7 +14,7 @@ public interface ChunkSectionRegion<T, N extends AIPathNode<T,N>> {
 
 	void forEach(ForEach action);
 
-	LongSet getOutgoingEdges(T context, List<N> previousNodes);
+	LongSet getOutgoingEdges(T context, N previousNode);
 
 	interface ForEach {
 		void accept(int x, int y, int z);
