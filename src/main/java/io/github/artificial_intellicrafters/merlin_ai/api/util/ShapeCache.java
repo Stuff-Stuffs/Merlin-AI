@@ -31,6 +31,8 @@ public interface ShapeCache extends BlockView {
 
 	boolean doesLocationSetExist(int x, int y, int z, ValidLocationSetType<?> type);
 
+	boolean doesRegionsExist(int x, int y, int z, ChunkSectionRegionType<?, ?> type);
+
 	static int computeCacheSize(final BlockPos minPos, final BlockPos maxPos) {
 		if (minPos.compareTo(maxPos) >= 0) {
 			throw new IllegalArgumentException("Argument minPos must be less than maxPos!");

@@ -23,6 +23,10 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 			taskQueue.add(new WrappedTask(task, order++));
 			return true;
 		}
+		if (!taskQueue.isEmpty() && taskQueue.peek().task.priority() > task.priority()) {
+			taskQueue.poll();
+			taskQueue.add(new WrappedTask(task, order++));
+		}
 		return false;
 	}
 

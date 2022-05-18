@@ -7,38 +7,40 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.ValidLocationSetImpl;
 import net.minecraft.util.math.ChunkSectionPos;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 public class ValidLocationAnalysisChunkSectionAITTask implements AITask {
-	private final long modCount;
+	private final BooleanSupplier shouldContinue;
 	private final LongSupplier currentModCount;
 	private final ValidLocationSetType<?> type;
 	private final ChunkSectionPos pos;
-	private final ShapeCache cache;
+	private final Supplier<ShapeCache> cacheFactory;
 	private final Consumer<ValidLocationSet<?>> completionConsumer;
 	private ValidLocationSetImpl<?> output = null;
 	private boolean finished = false;
 
-	public ValidLocationAnalysisChunkSectionAITTask(final long modCount, final LongSupplier currentModCount, final ValidLocationSetType<?> type, final ChunkSectionPos pos, final ShapeCache cache, final Consumer<ValidLocationSet<?>> completionConsumer) {
-		this.modCount = modCount;
+	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final LongSupplier currentModCount, final ValidLocationSetType<?> type, final ChunkSectionPos pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<?>> completionConsumer) {
+		this.shouldContinue = shouldContinue;
 		this.currentModCount = currentModCount;
 		this.type = type;
 		this.pos = pos;
-		this.cache = cache;
+		this.cacheFactory = cacheFactory;
 		this.completionConsumer = completionConsumer;
 	}
 
 	@Override
 	public boolean done() {
 		//done or chunk has changed since task submission
-		return output != null || modCount != currentModCount.getAsLong();
+		return output != null || !shouldContinue.getAsBoolean();
 	}
 
 	@Override
 	public void runIteration() {
 		if (output == null) {
-			output = new ValidLocationSetImpl<>(pos, cache, type);
+			output = new ValidLocationSetImpl<>(pos, cacheFactory.get(), type);
 		}
 	}
 
@@ -48,10 +50,8 @@ public class ValidLocationAnalysisChunkSectionAITTask implements AITask {
 			throw new RuntimeException("Tried to call runFinish twice!");
 		}
 		if (output != null) {
-			if (modCount == currentModCount.getAsLong()) {
-				completionConsumer.accept(output);
-				finished = true;
-			}
+			completionConsumer.accept(output);
+			finished = true;
 		}
 	}
 }

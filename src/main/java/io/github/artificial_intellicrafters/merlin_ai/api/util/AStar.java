@@ -89,7 +89,7 @@ public final class AStar {
 			i--;
 			node = previousNodeGetter.apply(node);
 		}
-		if (i != 0) {
+		if (i + 1 != 0) {
 			throw new RuntimeException("Invalid previousNodeGetter!");
 		}
 		return new PathInfo<>(considered, list);
