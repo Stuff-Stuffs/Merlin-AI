@@ -69,6 +69,8 @@ public final class AStar {
 						queue.removeFirstReference(node);
 
 						//Re-queue the node as its distance has changed;
+						//Instead of removing the old reference and adding the new one, this usually talked about in terms of just updating the h score and gscore of the node, or sometimes as using the decrease key function on a heap.
+						//Sadly we do not have access to a heap with efficient decrease key, so i just remove the old node and add the new node instead
 						queue.enqueue(wrapped);
 					}
 				}
