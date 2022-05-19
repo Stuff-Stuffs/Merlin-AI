@@ -1,16 +1,10 @@
-package io.github.artificial_intellicrafters.merlin_ai.impl.common.region.graph;
+package io.github.artificial_intellicrafters.merlin_ai.impl.common;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.graph.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkRegionsAnalysisAITask;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -95,17 +89,14 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		private final ChunkSectionPos pos;
 		private final PathingChunkSection section;
 		private final Map<ValidLocationSetType<?>, Object> locationSetCache;
-		private final Map<ChunkSectionRegionType<?, ?>, Object> regionsCache;
 		private final long[] modCounts;
 		private final long[] positions;
-		private int nextRegionId = Integer.MIN_VALUE;
 
 		public EntryImpl(final PathingChunkSection section, final ChunkSectionPos pos) {
 			id = section.merlin_ai$getSectionId();
 			this.section = section;
 			this.pos = pos;
 			locationSetCache = new Reference2ReferenceOpenHashMap<>();
-			regionsCache = new Reference2ReferenceOpenHashMap<>();
 			modCounts = new long[27];
 			modCounts[modCountIndex(0, 0, 0)] = section.merlin_ai$getModCount();
 			positions = new long[27];
@@ -121,14 +112,6 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			}
 		}
 
-		public int getNextRegionId() {
-			return nextRegionId;
-		}
-
-		public void setNextRegionId(final int nextRegionId) {
-			this.nextRegionId = nextRegionId;
-		}
-
 		private static int modCountIndex(final int x, final int y, final int z) {
 			return ((x + 1) * 3 + y + 1) * 3 + z + 1;
 		}
@@ -139,25 +122,36 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type) {
+		public synchronized @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type) {
 			boolean modPassing = true;
 			final long[] modCounts = this.modCounts;
 			final long[] positions = this.positions;
 			assert modCounts.length == positions.length;
 			for (int i = 0; i < modCounts.length; i++) {
-				final EntryImpl entry = getEntry(positions[i]);
-				if ((entry == null && modCounts[i] != -1) || (entry != null && modCounts[i] != entry.section.merlin_ai$getModCount())) {
-					if (entry == null) {
+				final EntryImpl entry = entries.get(positions[i]);
+				PathingChunkSection section = null;
+				if (entry == null) {
+					final WorldChunk chunk = chunks.get(positions[i]);
+					if (chunk != null) {
+						final int y = ChunkSectionPos.unpackY(positions[i]);
+						if (!world.isOutOfHeightLimit(y << 4)) {
+							section = (PathingChunkSection) chunk.getSectionArray()[world.sectionCoordToIndex(y)];
+						}
+					}
+				} else {
+					section = entry.section;
+				}
+				if ((section == null && modCounts[i] != -1) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
+					if (section == null) {
 						modCounts[i] = -1;
 					} else {
-						modCounts[i] = entry.section.merlin_ai$getModCount();
+						modCounts[i] = section.merlin_ai$getModCount();
 					}
 					modPassing = false;
 				}
 			}
 			if (!modPassing) {
 				locationSetCache.clear();
-				regionsCache.clear();
 				enqueueLocationSet(type);
 				return null;
 			}
@@ -171,7 +165,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			return (ValidLocationSet<T>) set;
 		}
 
-		private void enqueueLocationSet(final ValidLocationSetType<?> type) {
+		private synchronized void enqueueLocationSet(final ValidLocationSetType<?> type) {
 			final BlockPos blockPos = pos.getMinPos();
 			final BlockPos minCachePos = blockPos.add(-15, -15, -15);
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
@@ -183,53 +177,6 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				}
 			}));
 			locationSetCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
-		}
-
-		@Override
-		public @Nullable <T, N extends AIPathNode<T, N>> ChunkSectionRegions<T, N> getChunkSectionRegions(final ChunkSectionRegionType<T, N> type) {
-			boolean modPassing = true;
-			final long[] modCounts = this.modCounts;
-			final long[] positions = this.positions;
-			assert modCounts.length == positions.length;
-			for (int i = 0; i < modCounts.length; i++) {
-				final EntryImpl entry = getEntry(positions[i]);
-				if ((entry == null && modCounts[i] != -1) || (entry != null && modCounts[i] != entry.section.merlin_ai$getModCount())) {
-					if (entry == null) {
-						modCounts[i] = -1;
-					} else {
-						modCounts[i] = entry.section.merlin_ai$getModCount();
-					}
-					modPassing = false;
-				}
-			}
-			if (!modPassing) {
-				locationSetCache.clear();
-				regionsCache.clear();
-				enqueueRegions(type);
-				return null;
-			}
-			final Object set = regionsCache.get(type);
-			if (set == MerlinAI.PLACEHOLDER_OBJECT) {
-				return null;
-			}
-			if (set == null) {
-				enqueueRegions(type);
-			}
-			return (ChunkSectionRegions<T, N>) set;
-		}
-
-		private void enqueueRegions(final ChunkSectionRegionType<?, ?> type) {
-			final BlockPos blockPos = pos.getMinPos();
-			final BlockPos minCachePos = blockPos.add(-15, -15, -15);
-			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
-			final long[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
-			final BooleanSupplier matcher = () -> Arrays.equals(oldModCounts, modCounts);
-			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ChunkRegionsAnalysisAITask(matcher, type, pos, this, () -> ShapeCache.create(world, minCachePos, maxCachePos), regions -> {
-				if (matcher.getAsBoolean()) {
-					regionsCache.put(type, regions);
-				}
-			}));
-			regionsCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
 		}
 	}
 }

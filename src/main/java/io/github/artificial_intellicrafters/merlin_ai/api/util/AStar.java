@@ -1,11 +1,11 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
@@ -16,12 +16,12 @@ public final class AStar {
 
 	public static <T, C> PathInfo<T> findPath(final T start, final C context, final ToLongFunction<T> keyGetter, final NeighbourGetter<T, C> neighbourGetter, final Function<T, @Nullable T> previousNodeGetter, final ToDoubleFunction<T> cost, final ToDoubleFunction<T> heuristic, final double error, final double maxCost, final boolean partial) {
 		final Object[] successors = new Object[MAX_SUCCESSORS];
-		final PathingHeapQueue<WrappedPathNode<T>> queue = new PathingHeapQueue<>(Comparator.comparingDouble(i -> i.heuristicDistance + cost.applyAsDouble(i.delegate)));
-		final Long2ReferenceMap<WrappedPathNode<T>> visited = new Long2ReferenceOpenHashMap<>();
+		final PathingHeap<WrappedPathNode<T>> queue = new PathingHeap<>();
+		final Long2ReferenceMap<WrappedPathNode<T>> visited = new Long2ReferenceOpenHashMap<>(Hash.DEFAULT_INITIAL_SIZE, 0.5F);
 		double bestDist = Double.POSITIVE_INFINITY;
 		WrappedPathNode<T> best = null;
 		final WrappedPathNode<T> wrappedStart = wrap(start, 1, heuristic);
-		queue.enqueue(wrappedStart);
+		wrappedStart.handle = queue.insert(wrappedStart.heuristicDistance + cost.applyAsDouble(wrappedStart.delegate), wrappedStart);
 		visited.put(keyGetter.applyAsLong(start), wrappedStart);
 		final CostGetter costGetter = key -> {
 			final WrappedPathNode<T> node = visited.get(key);
@@ -32,7 +32,7 @@ public final class AStar {
 		};
 		//While there is more nodes to visit
 		while (!queue.isEmpty()) {
-			final WrappedPathNode<T> current = queue.dequeue();
+			final WrappedPathNode<T> current = queue.deleteMin().getValue();
 			//Check if the node is too far away
 			if (cost.applyAsDouble(current.delegate) > maxCost) {
 				continue;
@@ -57,21 +57,21 @@ public final class AStar {
 				final WrappedPathNode<T> node = visited.putIfAbsent(pos, wrapped);
 				if (node == null) {
 					//Enqueue node to be processed
-					queue.enqueue(wrapped);
+					wrapped.handle = queue.insert(wrapped.heuristicDistance + cost.applyAsDouble(wrapped.delegate), wrapped);
 				} else {
 					//We check if this node faster to get to than the currently existing one,  I add a small constant because sometimes a path is every so slightly short(example 0.0001 shorter path).
 					//This is not worth the computation time to consider
-					if (cost.applyAsDouble(next) + 0.1 < cost.applyAsDouble(node.delegate)) {
+					final double v = cost.applyAsDouble(next);
+					if (v + 0.1 < cost.applyAsDouble(node.delegate)) {
 						//This node is better, replace the current one at this position
 						visited.put(pos, wrapped);
-
-						//Remove the old node from the heap
-						queue.removeFirstReference(node);
-
-						//Re-queue the node as its distance has changed;
-						//Instead of removing the old reference and adding the new one, this usually talked about in terms of just updating the h score and gscore of the node, or sometimes as using the decrease key function on a heap.
-						//Sadly we do not have access to a heap with efficient decrease key, so i just remove the old node and add the new node instead
-						queue.enqueue(wrapped);
+						if (node.handle.isValid()) {
+							wrapped.handle = node.handle;
+							wrapped.handle.setValue(wrapped);
+							wrapped.handle.decreaseKey(v + node.heuristicDistance);
+						} else {
+							wrapped.handle = queue.insert(v + wrapped.heuristicDistance, wrapped);
+						}
 					}
 				}
 			}
@@ -108,7 +108,7 @@ public final class AStar {
 		public final T delegate;
 		public final int nodeCount;
 		public final double heuristicDistance;
-		public int index = -1;
+		public PathingHeap.Node<WrappedPathNode<T>> handle;
 
 		public WrappedPathNode(final T delegate, final int nodeCount, final double heuristicDistance) {
 			this.delegate = delegate;

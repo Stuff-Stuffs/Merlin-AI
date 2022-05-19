@@ -33,7 +33,7 @@ public final class LocationCacheTest {
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
 				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
-				LAST_PATH = pather.calculatePath(PathTarget.createBlockTarget(35, BlockPos.ORIGIN), 1000, true, client.cameraEntity);
+				LAST_PATH = pather.calculatePath(PathTarget.yLevel(-32), 256, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;
 				}

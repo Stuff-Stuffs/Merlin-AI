@@ -1,13 +1,9 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.graph.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.block.BlockState;
@@ -19,7 +15,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkCache;
 import net.minecraft.world.chunk.ChunkSection;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -35,8 +30,6 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private final int smallCacheMask;
 	private final long[] locationKeys;
 	private final ValidLocationSet<?>[] locationSets;
-	private final long[] regionKeys;
-	private final ChunkSectionRegions<?, ?>[] regionSets;
 
 	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
@@ -50,9 +43,6 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		locationKeys = new long[smallCacheSize];
 		locationSets = new ValidLocationSet[smallCacheSize];
 		Arrays.fill(locationKeys, DEFAULT_KEY);
-		regionKeys = new long[smallCacheSize];
-		regionSets = new ChunkSectionRegions[smallCacheSize];
-		Arrays.fill(regionKeys, DEFAULT_KEY);
 	}
 
 	@Override
@@ -108,25 +98,6 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		return false;
 	}
 
-	@Override
-	public boolean doesRegionsExist(final int x, final int y, final int z, final ChunkSectionRegionType<?, ?> type) {
-		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
-		final int pos = (int) (idx) & smallCacheMask;
-		if (regionKeys[pos] == idx && regionSets[pos].type() == type) {
-			return true;
-		}
-		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
-		if (entry != null) {
-			final ChunkSectionRegions<?, ?> set = entry.getChunkSectionRegions(type);
-			if (set != null) {
-				regionKeys[pos] = idx;
-				regionSets[pos] = set;
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private void populateCache(final int x, final int y, final int z, final long idx, final int pos) {
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
 		if (chunk != null) {
@@ -175,25 +146,6 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 			populateCache(x, y, z, idx, pos);
 			return collisionShapes[pos];
 		}
-	}
-
-	@Override
-	public <T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegion<T, N> getRegion(final int x, final int y, final int z, final ChunkSectionRegionType<T, N> type) {
-		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
-		final int pos = (int) (idx) & smallCacheMask;
-		if (regionKeys[pos] == idx && regionSets[pos].type() == type) {
-			return ((ChunkSectionRegions<T, N>) regionSets[pos]).getRegion(x, y, z);
-		}
-		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
-		if (entry != null) {
-			final ChunkSectionRegions<T, N> set = entry.getChunkSectionRegions(type);
-			if (set != null) {
-				regionKeys[pos] = idx;
-				regionSets[pos] = set;
-				return set.getRegion(x, y, z);
-			}
-		}
-		return null;
 	}
 
 	@Override

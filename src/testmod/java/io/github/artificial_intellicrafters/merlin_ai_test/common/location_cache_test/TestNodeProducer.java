@@ -19,29 +19,29 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		final BasicLocationType walkable = isWalkable(x, y + 1, z, shapeCache);
 		final BasicLocationType groundWalkable = isWalkable(x, y, z, shapeCache);
-		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable, prev);
 		}
 		return null;
 	}
 
 	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN, prev);
 		}
 		return null;
 	}
 
 	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		if (isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND, prev);
 		}
 		return null;
 	}
 
 	private BasicAIPathNode createAuto(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		final BasicLocationType type = isWalkable(x, y, z, shapeCache);
-		if (type != BasicLocationType.CLOSED && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
+		final BasicLocationType type;
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && (type = isWalkable(x, y, z, shapeCache)) != BasicLocationType.CLOSED) {
 			final boolean ground = type == BasicLocationType.GROUND;
 			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN, prev);
 		}

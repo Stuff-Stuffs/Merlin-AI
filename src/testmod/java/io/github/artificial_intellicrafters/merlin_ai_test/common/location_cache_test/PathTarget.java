@@ -41,4 +41,13 @@ public abstract class PathTarget {
 			private final Vec3d vec = Vec3d.ofBottomCenter(pos);
 		};
 	}
+
+	public static PathTarget yLevel(final int yLevel) {
+		return new PathTarget(1) {
+			@Override
+			public double heuristic(final double x, final double y, final double z) {
+				return Math.abs(y - yLevel);
+			}
+		};
+	}
 }

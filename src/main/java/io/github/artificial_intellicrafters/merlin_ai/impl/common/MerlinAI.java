@@ -2,7 +2,6 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.graph.ChunkRegionGraphImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.SingleThreadedAITaskExecutor;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.util.Identifier;

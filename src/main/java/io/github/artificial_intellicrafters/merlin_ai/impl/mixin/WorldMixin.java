@@ -1,10 +1,10 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.mixin;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.graph.ChunkRegionGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.graph.ChunkRegionGraphImpl;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.ChunkRegionGraphImpl;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
