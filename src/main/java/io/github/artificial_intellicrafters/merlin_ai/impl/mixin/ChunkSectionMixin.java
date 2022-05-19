@@ -20,8 +20,19 @@ public class ChunkSectionMixin implements PathingChunkSection {
 
 	@Inject(at = @At("RETURN"), method = "setBlockState(IIILnet/minecraft/block/BlockState;Z)Lnet/minecraft/block/BlockState;")
 	private void updateModCount(final int x, final int y, final int z, final BlockState state, final boolean lock, final CallbackInfoReturnable<BlockState> cir) {
-		if (cir.getReturnValue() != state) {
-			modCount++;
+		final BlockState returnValue = cir.getReturnValue();
+		if (returnValue != state) {
+			final boolean b1 = state.getBlock().hasDynamicBounds();
+			if (b1) {
+				modCount++;
+				return;
+			}
+			final boolean b2 = returnValue.getBlock().hasDynamicBounds();
+			if (b2) {
+				modCount++;
+			} else if (returnValue.getCollisionShape(null, null) != state.getCollisionShape(null, null)) {
+				modCount++;
+			}
 		}
 	}
 

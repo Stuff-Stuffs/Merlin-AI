@@ -4,6 +4,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegion;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -24,6 +25,8 @@ public interface ShapeCache extends BlockView {
 	default <T> T getLocationType(final BlockPos pos, final ValidLocationSetType<T> validLocationSetType) {
 		return getLocationType(pos.getX(), pos.getY(), pos.getZ(), validLocationSetType);
 	}
+
+	<T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegions<T, N> getRegions(int x, int y, int z, ChunkSectionRegionType<T, N> type);
 
 	<T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegion<T, N> getRegion(int x, int y, int z, ChunkSectionRegionType<T, N> type);
 

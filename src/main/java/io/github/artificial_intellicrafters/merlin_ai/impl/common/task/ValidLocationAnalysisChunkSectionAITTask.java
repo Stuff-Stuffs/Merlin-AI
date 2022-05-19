@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 
 public class ValidLocationAnalysisChunkSectionAITTask implements AITask {
 	private final BooleanSupplier shouldContinue;
-	private final LongSupplier currentModCount;
 	private final ValidLocationSetType<?> type;
 	private final ChunkSectionPos pos;
 	private final Supplier<ShapeCache> cacheFactory;
@@ -22,9 +21,8 @@ public class ValidLocationAnalysisChunkSectionAITTask implements AITask {
 	private ValidLocationSetImpl<?> output = null;
 	private boolean finished = false;
 
-	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final LongSupplier currentModCount, final ValidLocationSetType<?> type, final ChunkSectionPos pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<?>> completionConsumer) {
+	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final ValidLocationSetType<?> type, final ChunkSectionPos pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<?>> completionConsumer) {
 		this.shouldContinue = shouldContinue;
-		this.currentModCount = currentModCount;
 		this.type = type;
 		this.pos = pos;
 		this.cacheFactory = cacheFactory;
@@ -53,5 +51,10 @@ public class ValidLocationAnalysisChunkSectionAITTask implements AITask {
 			completionConsumer.accept(output);
 			finished = true;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "ValidLocationAnalysisChunkSectionAITTask{" + "pos=" + pos + '}';
 	}
 }

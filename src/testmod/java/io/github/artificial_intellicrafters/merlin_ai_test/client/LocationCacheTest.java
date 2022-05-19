@@ -31,8 +31,14 @@ public final class LocationCacheTest {
 	public static void init() {
 		KeyBindingHelper.registerKeyBinding(PATH_KEYBIND);
 		ClientTickEvents.START.register(client -> {
+			if (REMAINING_VISIBLE_TICKS > 0) {
+				REMAINING_VISIBLE_TICKS--;
+			}
+			if (REMAINING_VISIBLE_TICKS == 0) {
+				LAST_PATH = null;
+			}
 			if (PATH_KEYBIND.wasPressed()) {
-				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
+				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos, RegionCacheTest.BASIC_REGION_TYPE);
 				LAST_PATH = pather.calculatePath(PathTarget.createBlockTarget(35, BlockPos.ORIGIN), 1000, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;
@@ -47,10 +53,6 @@ public final class LocationCacheTest {
 						final BasicAIPathNode node = (BasicAIPathNode) o;
 						context.world().addParticle(effect, node.x + 0.5, node.y + 0.5, node.z + 0.5, 0, 0, 0);
 					}
-				}
-				REMAINING_VISIBLE_TICKS--;
-				if (REMAINING_VISIBLE_TICKS == 0) {
-					LAST_PATH = null;
 				}
 			}
 		});

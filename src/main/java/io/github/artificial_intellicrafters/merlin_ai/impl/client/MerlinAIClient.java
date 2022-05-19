@@ -12,6 +12,8 @@ public class MerlinAIClient implements ClientModInitializer {
 	public void onInitializeClient(final ModContainer mod) {
 		ClientChunkEvents.CHUNK_LOAD.register((world, chunk) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).load(chunk));
 		ClientChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).unload(chunk));
+		ClientWorldTickEvents.END.register((server, world) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).tick());
+
 		ClientWorldTickEvents.END.register((server, world) -> ((AIWorld) world).merlin_ai$getTaskExecutor().runTasks(20));
 	}
 }

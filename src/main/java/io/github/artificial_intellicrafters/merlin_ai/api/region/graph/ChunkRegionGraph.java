@@ -16,6 +16,8 @@ public interface ChunkRegionGraph {
 	interface Entry {
 		long getId();
 
+		<T, N extends AIPathNode<T, N>> int getAdjacentRegions(ChunkSectionRegionType<T, N> type, long id, long[] neighbours);
+
 		/**
 		 * @return A valid location set if it exists, this operation is slow, you should cache it
 		 */

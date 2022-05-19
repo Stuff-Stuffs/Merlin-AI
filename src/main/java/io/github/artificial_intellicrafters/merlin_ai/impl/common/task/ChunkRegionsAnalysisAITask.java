@@ -11,7 +11,6 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.ChunkSectionBigRegionImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.ChunkSectionRegionsImpl;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.ChunkSectionSmallRegionImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.region.graph.ChunkRegionGraphImpl;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
@@ -19,13 +18,11 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import it.unimi.dsi.fastutil.objects.ObjectLists;
 import it.unimi.dsi.fastutil.shorts.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkSectionPos;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -74,7 +71,6 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		for (final ValidLocationSetType<?> dependency : type.dependencies()) {
 			if (!cache.doesLocationSetExist(x, y, z, dependency)) {
 				ready = false;
-				break;
 			}
 		}
 		if (ready) {
@@ -86,8 +82,8 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		final int x = pos.getMinX();
 		final int y = pos.getMinY();
 		final int z = pos.getMinZ();
-		final Short2ReferenceMap<List<N>> contextSensitiveAndOuterEdges = new Short2ReferenceOpenHashMap<>();
-		final Short2ReferenceMap<ShortSet> normalEdges = search(neighbourGetter, contextSensitiveAndOuterEdges, cache);
+		final Short2ReferenceMap<LongSet> outerEdges = new Short2ReferenceOpenHashMap<>();
+		final Short2ReferenceMap<ShortSet> normalEdges = search(neighbourGetter, outerEdges, cache);
 		if (normalEdges.isEmpty()) {
 			output = new ChunkSectionRegionsImpl<T, N>(type, new ChunkSectionRegion[0]);
 			return;
@@ -96,7 +92,6 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		final Int2ReferenceMap<ShortSet> components = stronglyConnectedComponents(normalEdges, categorized);
 
 		final Int2ReferenceMap<LongSet> normalOutgoingRegionEdges = new Int2ReferenceOpenHashMap<>(components.size());
-		final Int2ReferenceMap<List<N>> contextSensitiveOutgoingRegionEdges = new Int2ReferenceOpenHashMap<>(contextSensitiveAndOuterEdges.size());
 		for (final Short2ReferenceMap.Entry<ShortSet> entry : normalEdges.short2ReferenceEntrySet()) {
 			final short packed = entry.getShortKey();
 			final int containingIndex = categorized.get(packed);
@@ -109,17 +104,14 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 						longs = new LongOpenHashSet();
 						normalOutgoingRegionEdges.put(containingIndex, longs);
 					}
-					longs.add(BlockPos.asLong(x + ChunkSectionRegion.unpackLocalX(edge), y + ChunkSectionRegion.unpackLocalY(edge), ChunkSectionRegion.unpackLocalZ(edge)));
+					longs.add(BlockPos.asLong(x + ChunkSectionRegion.unpackLocalX(edge), y + ChunkSectionRegion.unpackLocalY(edge), z + ChunkSectionRegion.unpackLocalZ(edge)));
 				}
 			}
-			final List<N> nodes = contextSensitiveAndOuterEdges.get(packed);
-			if (nodes != null) {
-				for (final N n : nodes) {
-					if (!ChunkSectionRegion.isLocal(n.x - x, n.y - y, n.z - z) || categorized.get(ChunkSectionRegion.packLocal(n.x - x, n.y - y, n.z - z)) != containingIndex) {
-						contextSensitiveOutgoingRegionEdges.computeIfAbsent(containingIndex, i -> new ArrayList<>()).add(n);
-					}
-				}
-			}
+		}
+
+		for (final Short2ReferenceMap.Entry<LongSet> entry : outerEdges.short2ReferenceEntrySet()) {
+			final int containingIndex = categorized.get(entry.getShortKey());
+			normalOutgoingRegionEdges.computeIfAbsent(containingIndex, i -> new LongOpenHashSet()).addAll(entry.getValue());
 		}
 
 		final ChunkSectionRegion<T, N>[] regions = new ChunkSectionRegion[components.size()];
@@ -132,16 +124,9 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 			if (normalOutgoingEdges == null) {
 				normalOutgoingEdges = LongSets.emptySet();
 			}
-			List<N> contextSensitiveOutgoingEdges = contextSensitiveOutgoingRegionEdges.get(key);
-			if (contextSensitiveOutgoingEdges == null) {
-				contextSensitiveOutgoingEdges = ObjectLists.emptyList();
-			}
-			if (shorts.size() <= 8) {
-				regions[i] = new ChunkSectionSmallRegionImpl<>(minId + i, shorts.toShortArray(), normalOutgoingEdges, contextSensitiveOutgoingEdges.toArray(AIPathNode[]::new));
-			} else {
-				regions[i] = new ChunkSectionBigRegionImpl<>(minId + i, shorts, normalOutgoingEdges, contextSensitiveOutgoingEdges.toArray(AIPathNode[]::new));
-			}
-			i++;
+			final short[] positions = shorts.toShortArray();
+			Arrays.sort(positions);
+			regions[i++] = new ChunkSectionBigRegionImpl<>(minId + i, positions, normalOutgoingEdges);
 		}
 		entry.setNextRegionId(minId + components.size() + 1);
 		output = new ChunkSectionRegionsImpl<>(type, regions);
@@ -216,7 +201,7 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 		}
 	}
 
-	private <T, N extends AIPathNode<T, N>> Short2ReferenceMap<ShortSet> search(final NeighbourGetter<T, N> getter, final Short2ReferenceMap<List<N>> contextSensitiveAndOuterEdges, final ShapeCache cache) {
+	private <T, N extends AIPathNode<T, N>> Short2ReferenceMap<ShortSet> search(final NeighbourGetter<T, N> getter, final Short2ReferenceMap<LongSet> outerEdges, final ShapeCache cache) {
 		final int x = pos.getMinX();
 		final int y = pos.getMinY();
 		final int z = pos.getMinZ();
@@ -236,8 +221,8 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 				ShortSet shorts = edges.get(key);
 				for (int i = 0; i < neighbours; i++) {
 					final N successor = (N) successors[i];
-					if (successor.linkPredicate != null || !ChunkSectionRegion.isLocal(successor.x - x, successor.y - y, successor.z - z)) {
-						contextSensitiveAndOuterEdges.computeIfAbsent(key, k -> new ArrayList<>()).add(successor);
+					if (!ChunkSectionRegion.isLocal(successor.x - x, successor.y - y, successor.z - z)) {
+						outerEdges.computeIfAbsent(key, k -> new LongOpenHashSet()).add(BlockPos.asLong(successor.x, successor.y, successor.z));
 						continue;
 					}
 					final short packed = ChunkSectionRegion.packLocal(successor.x - x, successor.y - y, successor.z - z);
@@ -288,5 +273,10 @@ public class ChunkRegionsAnalysisAITask implements AITask {
 			completionConsumer.accept(output);
 			finished = true;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "ChunkRegionsAnalysisAITask{" + "pos=" + pos + '}';
 	}
 }

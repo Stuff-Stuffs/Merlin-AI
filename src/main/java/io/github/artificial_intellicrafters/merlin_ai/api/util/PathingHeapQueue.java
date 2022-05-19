@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 
 //TODO maybe replace this with a Pairing Heap?
-class PathingHeapQueue<K extends AStar.WrappedPathNode<?>> {
+public class PathingHeapQueue<K extends AStar.WrappedPathNode<?>> {
 	private int size = 0;
 	private Object[] heap = new Object[0];
 	private final Comparator<? super K> c;

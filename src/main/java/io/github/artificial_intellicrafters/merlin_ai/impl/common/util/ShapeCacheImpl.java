@@ -178,6 +178,25 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
+	public @Nullable <T, N extends AIPathNode<T, N>> ChunkSectionRegions<T, N> getRegions(final int x, final int y, final int z, final ChunkSectionRegionType<T, N> type) {
+		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
+		final int pos = (int) (idx) & smallCacheMask;
+		if (regionKeys[pos] == idx && regionSets[pos].type() == type) {
+			return ((ChunkSectionRegions<T, N>) regionSets[pos]);
+		}
+		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
+		if (entry != null) {
+			final ChunkSectionRegions<T, N> set = entry.getChunkSectionRegions(type);
+			if (set != null) {
+				regionKeys[pos] = idx;
+				regionSets[pos] = set;
+				return set;
+			}
+		}
+		return null;
+	}
+
+	@Override
 	public <T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegion<T, N> getRegion(final int x, final int y, final int z, final ChunkSectionRegionType<T, N> type) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;

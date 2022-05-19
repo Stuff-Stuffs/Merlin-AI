@@ -100,11 +100,11 @@ public final class AStar {
 	public record PathInfo<T>(int nodesConsidered, @Nullable List<T> path) {
 	}
 
-	private static <T> WrappedPathNode<T> wrap(final T delegate, final int nodeCount, final ToDoubleFunction<T> heuristic) {
+	public static <T> WrappedPathNode<T> wrap(final T delegate, final int nodeCount, final ToDoubleFunction<T> heuristic) {
 		return new WrappedPathNode<>(delegate, nodeCount, heuristic.applyAsDouble(delegate));
 	}
 
-	static final class WrappedPathNode<T> {
+	public static final class WrappedPathNode<T> {
 		public final T delegate;
 		public final int nodeCount;
 		public final double heuristicDistance;
