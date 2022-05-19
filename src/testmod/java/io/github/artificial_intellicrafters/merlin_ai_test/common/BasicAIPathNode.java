@@ -14,9 +14,4 @@ public class BasicAIPathNode extends AIPathNode<Entity, BasicAIPathNode> {
 		super(x, y, z, cost, previous);
 		this.type = type;
 	}
-
-	public BasicAIPathNode(final int x, final int y, final int z, final BiPredicate<Entity, BasicAIPathNode> linkPredicate, final double cost, final BasicLocationType type, final @Nullable BasicAIPathNode previous) {
-		super(x, y, z, linkPredicate, cost, previous);
-		this.type = type;
-	}
 }
