@@ -2,6 +2,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.task;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITask;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 	@Override
 	public void runTasks(final int maxMillis) {
 		final long startMillis = System.currentTimeMillis();
-		final List<AITask> finished = new ArrayList<>();
+		final List<WrappedTask> finished = new ArrayList<>();
 		while (System.currentTimeMillis() - startMillis <= maxMillis) {
 			WrappedTask task;
 			while (true) {
@@ -41,32 +42,51 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				if (task == null) {
 					break;
 				}
-				if (task.task().done()) {
+				if (task.task.done()) {
 					taskQueue.poll();
-					finished.add(task.task());
+					finished.add(task);
 				} else {
 					break;
 				}
 			}
 			if (task != null) {
-				task.task().runIteration();
+				final long preMillis = System.currentTimeMillis();
+				task.task.runIteration();
+				task.duration += System.currentTimeMillis() - preMillis;
 			} else {
 				break;
 			}
 		}
-		for (final AITask task : finished) {
-			task.runFinish();
+		for (final WrappedTask task : finished) {
+			task.task.runFinish();
+			if (MerlinAI.DEBUG) {
+				System.out.println("Finished task " + task + ", took " + task.duration + "ms");
+			}
 		}
 	}
 
-	private record WrappedTask(AITask task, long order) implements Comparable<WrappedTask> {
+	private static final class WrappedTask implements Comparable<WrappedTask> {
+		private final AITask task;
+		private final long order;
+		private long duration = 0;
+
+		private WrappedTask(final AITask task, final long order) {
+			this.task = task;
+			this.order = order;
+		}
+
 		@Override
-		public int compareTo(final SingleThreadedAITaskExecutor.WrappedTask o) {
+		public int compareTo(final WrappedTask o) {
 			final int i = Integer.compare(task.priority(), o.task.priority());
 			if (i != 0) {
 				return i;
 			}
 			return Long.compare(order, o.order);
+		}
+
+		@Override
+		public String toString() {
+			return "WrappedTask[" + "task=" + task + ", " + "order=" + order + ']';
 		}
 	}
 }

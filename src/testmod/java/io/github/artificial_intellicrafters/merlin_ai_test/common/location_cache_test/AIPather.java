@@ -4,17 +4,16 @@ import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.QuiltLoader;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class AIPather<T, N extends AIPathNode<T, N>> {
-	private static final boolean DEBUG = QuiltLoader.isDevelopmentEnvironment();
 	private final World world;
 	private final NeighbourGetter<T, N> neighbourGetter;
 	private final Function<T, BlockPos> startingPositionRetriever;
@@ -26,7 +25,7 @@ public class AIPather<T, N extends AIPathNode<T, N>> {
 	}
 
 	public @Nullable AIPath<T, N> calculatePath(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
-		if (DEBUG) {
+		if (MerlinAI.DEBUG) {
 			final StopWatch stopWatch = StopWatch.createStarted();
 			final PathInfo<T, N> info = find(pathTarget, max, partial, context);
 			stopWatch.stop();

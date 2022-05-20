@@ -85,7 +85,6 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 	}
 
 	public final class EntryImpl implements Entry {
-		private final long id;
 		private final ChunkSectionPos pos;
 		private final PathingChunkSection section;
 		private final Map<ValidLocationSetType<?>, Object> locationSetCache;
@@ -93,7 +92,6 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		private final long[] positions;
 
 		public EntryImpl(final PathingChunkSection section, final ChunkSectionPos pos) {
-			id = section.merlin_ai$getSectionId();
 			this.section = section;
 			this.pos = pos;
 			locationSetCache = new Reference2ReferenceOpenHashMap<>();
@@ -114,11 +112,6 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 
 		private static int modCountIndex(final int x, final int y, final int z) {
 			return ((x + 1) * 3 + y + 1) * 3 + z + 1;
-		}
-
-		@Override
-		public long getId() {
-			return id;
 		}
 
 		@Override

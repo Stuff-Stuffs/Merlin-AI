@@ -6,6 +6,7 @@ import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.SingleThr
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.util.Identifier;
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.qsl.base.api.entrypoint.ModInitializer;
 import org.quiltmc.qsl.lifecycle.api.event.ServerWorldTickEvents;
 import org.slf4j.Logger;
@@ -14,9 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class MerlinAI implements ModInitializer {
+	public static final boolean DEBUG = QuiltLoader.isDevelopmentEnvironment();
 	//Object to be used in to represent a full but not complete object
 	public static final Object PLACEHOLDER_OBJECT = new Object();
-	private static final AtomicLong NEXT_SECTION_ID = new AtomicLong(Long.MIN_VALUE);
 	public static final String MOD_ID = "merlin_ai";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
@@ -35,9 +36,5 @@ public class MerlinAI implements ModInitializer {
 	//TODO config
 	public static AITaskExecutor createExecutor() {
 		return new SingleThreadedAITaskExecutor(32);
-	}
-
-	public static long getNextSectionId() {
-		return NEXT_SECTION_ID.getAndIncrement();
 	}
 }

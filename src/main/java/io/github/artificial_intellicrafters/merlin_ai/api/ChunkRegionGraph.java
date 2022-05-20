@@ -11,8 +11,6 @@ public interface ChunkRegionGraph {
 	@Nullable Entry getEntry(int x, int y, int z);
 
 	interface Entry {
-		long getId();
-
 		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type);
 	}
 }
