@@ -14,17 +14,15 @@ import java.util.function.Supplier;
 
 public class ValidLocationAnalysisChunkSectionAITTask implements AITask {
 	private final BooleanSupplier shouldContinue;
-	private final LongSupplier currentModCount;
 	private final ValidLocationSetType<?> type;
-	private final ChunkSectionPos pos;
+	private final long pos;
 	private final Supplier<ShapeCache> cacheFactory;
 	private final Consumer<ValidLocationSet<?>> completionConsumer;
 	private ValidLocationSetImpl<?> output = null;
 	private boolean finished = false;
 
-	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final LongSupplier currentModCount, final ValidLocationSetType<?> type, final ChunkSectionPos pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<?>> completionConsumer) {
+	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final ValidLocationSetType<?> type, final long pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<?>> completionConsumer) {
 		this.shouldContinue = shouldContinue;
-		this.currentModCount = currentModCount;
 		this.type = type;
 		this.pos = pos;
 		this.cacheFactory = cacheFactory;

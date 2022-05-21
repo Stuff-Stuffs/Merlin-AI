@@ -44,7 +44,7 @@ public final class CollisionUtil {
 					if (box.intersects(x, y, z, x + 1, y + 1, z + 1)) {
 						return true;
 					}
-				} else if (VoxelShapes.matchesAnywhere(boxShape, voxelShape, BooleanBiFunction.AND)) {
+				} else if (VoxelShapes.matchesAnywhere(boxShape.offset(x, y, z), voxelShape, BooleanBiFunction.AND)) {
 					return true;
 				}
 			}

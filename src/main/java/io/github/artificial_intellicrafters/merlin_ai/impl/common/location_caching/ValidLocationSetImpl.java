@@ -5,7 +5,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import net.minecraft.util.math.ChunkSectionPos;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.SubChunkSectionUtil;
 
 public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final int mask;
@@ -14,7 +14,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final long[] data;
 	private final ValidLocationSetType<T> type;
 
-	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType) {
+	public ValidLocationSetImpl(final long subSectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType) {
 		final ValidLocationClassifier<T> classifier = setType.classifier();
 		universeInfo = setType.universeInfo();
 		int universeSize = universeInfo.getUniverseSize();
@@ -28,17 +28,17 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		mask = universeSize - 1;
 		bitCount = Integer.highestOneBit(mask);
 
-		data = new long[(16 * 16 * 16 * bitCount + 63) / 64];
+		data = new long[(SubChunkSectionUtil.SUB_SECTION_SIZE * SubChunkSectionUtil.SUB_SECTION_SIZE * SubChunkSectionUtil.SUB_SECTION_SIZE * bitCount + 63) / 64];
 
-		final int baseX = sectionPos.getMinX();
-		final int baseY = sectionPos.getMinY();
-		final int baseZ = sectionPos.getMinZ();
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 16; y++) {
-				for (int z = 0; z < 16; z++) {
+		final int baseX = SubChunkSectionUtil.subSectionToBlock(SubChunkSectionUtil.unpackX(subSectionPos));
+		final int baseY = SubChunkSectionUtil.subSectionToBlock(SubChunkSectionUtil.unpackY(subSectionPos));
+		final int baseZ = SubChunkSectionUtil.subSectionToBlock(SubChunkSectionUtil.unpackZ(subSectionPos));
+		for (int x = 0; x < SubChunkSectionUtil.SUB_SECTION_SIZE; x++) {
+			for (int y = 0; y < SubChunkSectionUtil.SUB_SECTION_SIZE; y++) {
+				for (int z = 0; z < SubChunkSectionUtil.SUB_SECTION_SIZE; z++) {
 					final T val = classifier.validate(baseX + x, baseY + y, baseZ + z, cache);
-					final int index = byteIndex(x & 15, y & 15, z & 15);
-					final int subIndex = subIndex(x & 15, y & 15, z & 15);
+					final int index = byteIndex(x & 7, y & 7, z & 7);
+					final int subIndex = subIndex(x & 7, y & 7, z & 7);
 					long datum = data[index];
 					datum = datum | (long) (universeInfo.toInt(val) & mask) << subIndex;
 					data[index] = datum;
@@ -55,17 +55,17 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 
 	@Override
 	public T get(final int x, final int y, final int z) {
-		final int index = byteIndex(x & 15, y & 15, z & 15);
-		final int subIndex = subIndex(x & 15, y & 15, z & 15);
+		final int index = byteIndex(x & 7, y & 7, z & 7);
+		final int subIndex = subIndex(x & 7, y & 7, z & 7);
 		final long datum = data[index];
 		return universeInfo.fromInt((int) ((datum >> subIndex) & mask));
 	}
 
 	private int subIndex(final int x, final int y, final int z) {
-		return (x * 16 * 16 + y * 16 + z) * bitCount % 64;
+		return (x * SubChunkSectionUtil.SUB_SECTION_SIZE * SubChunkSectionUtil.SUB_SECTION_SIZE + y * SubChunkSectionUtil.SUB_SECTION_SIZE + z) * bitCount % 64;
 	}
 
 	private int byteIndex(final int x, final int y, final int z) {
-		return (x * 16 * 16 + y * 16 + z) * bitCount / 64;
+		return (x * SubChunkSectionUtil.SUB_SECTION_SIZE * SubChunkSectionUtil.SUB_SECTION_SIZE + y * SubChunkSectionUtil.SUB_SECTION_SIZE + z) * bitCount / 64;
 	}
 }

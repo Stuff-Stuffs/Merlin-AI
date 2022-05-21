@@ -25,9 +25,9 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 		return null;
 	}
 
-	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN) {
-			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN, prev);
+	private BasicAIPathNode createJump(final int x, final int y, final int z, final int xOff, final int zOff, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		if (costGetter.cost(BlockPos.asLong(x+xOff, y+1, z+zOff)) > prev.cost + 1.25 && isWalkable(x + xOff, y + 1, z + zOff, shapeCache) == BasicLocationType.GROUND && isWalkable(x, y + 1, z, shapeCache) == BasicLocationType.OPEN) {
+			return new BasicAIPathNode(x+xOff, y+1, z+zOff, prev.cost + 1.25, BasicLocationType.GROUND, prev);
 		}
 		return null;
 	}
@@ -100,15 +100,26 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 			if (node != null) {
 				successors[i++] = node;
 			}
-		}
 
-		//Jump
-		if (previous.type == BasicLocationType.GROUND) {
-			node = createAir(previous.x, previous.y + 1, previous.z, previous, cache, costGetter);
+			//JUMP
+			node = createJump(previous.x, previous.y, previous.z, 1, 0, previous, cache, costGetter);
+			if (node != null) {
+				successors[i++] = node;
+			}
+			node = createJump(previous.x, previous.y, previous.z, -1, 0, previous, cache, costGetter);
+			if (node != null) {
+				successors[i++] = node;
+			}
+			node = createJump(previous.x, previous.y, previous.z, 0, 1, previous, cache, costGetter);
+			if (node != null) {
+				successors[i++] = node;
+			}
+			node = createJump(previous.x, previous.y, previous.z, 0, -1, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
+
 		//down
 		if (previous.type == BasicLocationType.OPEN) {
 			node = createAuto(previous.x, previous.y - 1, previous.z, previous, cache, costGetter);
