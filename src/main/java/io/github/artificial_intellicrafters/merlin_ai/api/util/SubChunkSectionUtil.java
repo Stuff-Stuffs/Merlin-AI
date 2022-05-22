@@ -17,6 +17,10 @@ public final class SubChunkSectionUtil {
 	private static final int BIT_SHIFT_X = SIZE_BITS_Y + SIZE_BITS_Z;
 	private static final int BIT_SHIFT_FLAG = SIZE_BITS_Y + SIZE_BITS_X + SIZE_BITS_Z;
 
+	public static long canonicalizeSubSectionPos(final long packed, final int flag) {
+		return packed & ~(BITS_FLAG << BIT_SHIFT_FLAG) | (flag & BITS_FLAG) << BIT_SHIFT_FLAG;
+	}
+
 	public static boolean isLocal(final int x, final int y, final int z) {
 		return 0 <= x && x < SUB_SECTION_SIZE && 0 <= y && y < SUB_SECTION_SIZE && 0 <= z && z < SUB_SECTION_SIZE;
 	}
@@ -61,7 +65,7 @@ public final class SubChunkSectionUtil {
 	}
 
 	public static int unpackFlag(final long packedPos) {
-		return (int) (packedPos << 64 - BIT_SHIFT_FLAG - SIZE_BITS_FLAG >> 64 - SIZE_BITS_FLAG);
+		return (int) (packedPos << 64 - BIT_SHIFT_FLAG - SIZE_BITS_FLAG >>> 64 - SIZE_BITS_FLAG);
 	}
 
 	public static int subSectionToBlock(final int subSectionCoordinate) {
@@ -72,14 +76,14 @@ public final class SubChunkSectionUtil {
 		return blockCoordinate >> 3;
 	}
 
-	private SubChunkSectionUtil() {
-	}
-
 	public static int subSectionIndex(final long packed) {
 		return subSectionIndex(unpackX(packed), unpackY(packed), unpackZ(packed));
 	}
 
 	public static int subSectionIndex(final int subSectionX, final int subSectionY, final int subSectionZ) {
 		return ((subSectionX & 1) * 2 + (subSectionY & 1)) * 2 + (subSectionZ & 1);
+	}
+
+	private SubChunkSectionUtil() {
 	}
 }

@@ -7,6 +7,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.HierarchyPathfinder;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.*;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -25,14 +26,23 @@ public final class LocationCacheTest {
 	public static final ValidLocationSetType<BasicLocationType> ONE_X_TWO_BASIC_LOCATION_SET_TYPE;
 	public static final NeighbourGetter<Entity, BasicAIPathNode> BASIC_NEIGHBOUR_GETTER;
 	public static final KeyBind PATH_KEYBIND = new KeyBind("merlin_ai.location_cache_test", GLFW.GLFW_KEY_F7, "misc");
+	public static final KeyBind PATH_HIERARCHY_KEYBIND = new KeyBind("merlin_ai.path_hierarchy", GLFW.GLFW_KEY_F9, "misc");
 	private static AIPath<Entity, BasicAIPathNode> LAST_PATH = null;
 	private static int REMAINING_VISIBLE_TICKS = 0;
 
 	public static void init() {
 		KeyBindingHelper.registerKeyBinding(PATH_KEYBIND);
+		KeyBindingHelper.registerKeyBinding(PATH_HIERARCHY_KEYBIND);
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
 				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
+				LAST_PATH = pather.calculatePath(PathTarget.yLevel(-32), 256, true, client.cameraEntity);
+				if (LAST_PATH != null) {
+					REMAINING_VISIBLE_TICKS = 6000;
+				}
+			}
+			if (PATH_HIERARCHY_KEYBIND.wasPressed()) {
+				final HierarchyPathfinder<Entity, BasicAIPathNode> pather = new HierarchyPathfinder<>(client.world, RegionCacheTest.BASIC_REGION_TYPE, Entity::getBlockPos);
 				LAST_PATH = pather.calculatePath(PathTarget.yLevel(-32), 256, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;

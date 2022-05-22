@@ -2,7 +2,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.region;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSubSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.SubChunkSectionUtil;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -13,12 +13,12 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 
-public abstract class ChunkSectionRegionsImpl<T, N extends AIPathNode<T, N>> implements ChunkSectionRegions<T, N> {
+public abstract class ChunkSubSectionRegionsImpl<T, N extends AIPathNode<T, N>> implements ChunkSubSectionRegions<T, N> {
 	private final ChunkSectionRegionType<T, N> type;
 	private final LongSet[] outEdges;
 	private final AIPathNode<T, N>[][] contextSensitiveOutEdges;
 
-	private ChunkSectionRegionsImpl(final ChunkSectionRegionType<T, N> type, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges) {
+	private ChunkSubSectionRegionsImpl(final ChunkSectionRegionType<T, N> type, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges) {
 		this.type = type;
 		this.outEdges = outEdges;
 		this.contextSensitiveOutEdges = contextSensitiveOutEdges;
@@ -55,7 +55,7 @@ public abstract class ChunkSectionRegionsImpl<T, N extends AIPathNode<T, N>> imp
 		return type;
 	}
 
-	public static <T, N extends AIPathNode<T, N>> ChunkSectionRegionsImpl<T, N> create(final ChunkSectionRegionType<T, N> type, final ShortSet[] regions, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges) {
+	public static <T, N extends AIPathNode<T, N>> ChunkSubSectionRegionsImpl<T, N> create(final ChunkSectionRegionType<T, N> type, final ShortSet[] regions, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges) {
 		if (regions.length == 0) {
 			return new Empty<>(type);
 		} else if (regions.length < (int) Byte.MAX_VALUE - (int) Byte.MIN_VALUE) {
@@ -93,7 +93,7 @@ public abstract class ChunkSectionRegionsImpl<T, N extends AIPathNode<T, N>> imp
 		}
 	}
 
-	private static final class Empty<T, N extends AIPathNode<T, N>> extends ChunkSectionRegionsImpl<T, N> {
+	private static final class Empty<T, N extends AIPathNode<T, N>> extends ChunkSubSectionRegionsImpl<T, N> {
 		private Empty(final ChunkSectionRegionType<T, N> type) {
 			super(type, new LongSet[]{LongSets.emptySet()}, new AIPathNode[1][0]);
 		}
@@ -105,7 +105,7 @@ public abstract class ChunkSectionRegionsImpl<T, N extends AIPathNode<T, N>> imp
 	}
 
 
-	private static final class Small<T, N extends AIPathNode<T, N>> extends ChunkSectionRegionsImpl<T, N> {
+	private static final class Small<T, N extends AIPathNode<T, N>> extends ChunkSubSectionRegionsImpl<T, N> {
 		private final byte[] ids;
 
 		private Small(final ChunkSectionRegionType<T, N> type, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges, final byte[] ids) {
@@ -115,11 +115,11 @@ public abstract class ChunkSectionRegionsImpl<T, N extends AIPathNode<T, N>> imp
 
 		@Override
 		public int getContainingRegion(final int x, final int y, final int z) {
-			return (int) ids[SubChunkSectionUtil.packLocal(x, y, z)] - (int) Byte.MIN_VALUE;
+			return (((int)ids[SubChunkSectionUtil.packLocal(x, y, z)]&0xFF) - (int)Byte.MIN_VALUE)&0xFF;
 		}
 	}
 
-	private static final class Large<T, N extends AIPathNode<T, N>> extends ChunkSectionRegionsImpl<T, N> {
+	private static final class Large<T, N extends AIPathNode<T, N>> extends ChunkSubSectionRegionsImpl<T, N> {
 		private final short[] ids;
 
 		private Large(final ChunkSectionRegionType<T, N> type, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges, final short[] ids) {
@@ -129,18 +129,18 @@ public abstract class ChunkSectionRegionsImpl<T, N extends AIPathNode<T, N>> imp
 
 		@Override
 		public int getContainingRegion(final int x, final int y, final int z) {
-			return ids[SubChunkSectionUtil.packLocal(x, y, z)];
+			return ((int)ids[SubChunkSectionUtil.packLocal(x, y, z)])&0xFFFF;
 		}
 	}
 
-	private static final class Full<T, N extends AIPathNode<T, N>> extends ChunkSectionRegionsImpl<T, N> {
+	private static final class Full<T, N extends AIPathNode<T, N>> extends ChunkSubSectionRegionsImpl<T, N> {
 		private Full(final ChunkSectionRegionType<T, N> type, final LongSet[] outEdges, final AIPathNode<T, N>[][] contextSensitiveOutEdges) {
 			super(type, outEdges, contextSensitiveOutEdges);
 		}
 
 		@Override
 		public int getContainingRegion(final int x, final int y, final int z) {
-			return SubChunkSectionUtil.packLocal(x, y, z);
+			return ((int)SubChunkSectionUtil.packLocal(x, y, z))&0xFFFF;
 		}
 	}
 }

@@ -6,7 +6,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSubSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.SubChunkSectionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.RegionAnalysisAITask;
@@ -56,7 +56,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 
 	@Override
 	public @Nullable EntryImpl getEntry(final long subSectionPos) {
-		return getOrCreateEntry(subSectionPos);
+		return getOrCreateEntry(SubChunkSectionUtil.canonicalizeSubSectionPos(subSectionPos, 0));
 	}
 
 	@Override
@@ -181,7 +181,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public @Nullable <T, N extends AIPathNode<T, N>> ChunkSectionRegions<T, N> getRegions(final ChunkSectionRegionType<T, N> type) {
+		public @Nullable <T, N extends AIPathNode<T, N>> ChunkSubSectionRegions<T, N> getRegions(final ChunkSectionRegionType<T, N> type) {
 			if (!verify()) {
 				locationSetCache.clear();
 				regionsCache.clear();
@@ -195,15 +195,15 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			if (o == null) {
 				enqueueRegions(type);
 			}
-			return (ChunkSectionRegions<T, N>) o;
+			return (ChunkSubSectionRegions<T, N>) o;
 		}
 
 		private void enqueueRegions(final ChunkSectionRegionType<?, ?> type) {
 			final int x = SubChunkSectionUtil.subSectionToBlock(SubChunkSectionUtil.unpackX(subSectionPos));
 			final int y = SubChunkSectionUtil.subSectionToBlock(SubChunkSectionUtil.unpackY(subSectionPos));
 			final int z = SubChunkSectionUtil.subSectionToBlock(SubChunkSectionUtil.unpackZ(subSectionPos));
-			final BlockPos minCachePos = new BlockPos(x - SubChunkSectionUtil.SUB_SECTION_SIZE, y - SubChunkSectionUtil.SUB_SECTION_SIZE, z - SubChunkSectionUtil.SUB_SECTION_SIZE);
-			final BlockPos maxCachePos = new BlockPos(x + SubChunkSectionUtil.SUB_SECTION_SIZE, y + SubChunkSectionUtil.SUB_SECTION_SIZE, z + SubChunkSectionUtil.SUB_SECTION_SIZE);
+			final BlockPos minCachePos = new BlockPos(x - 17, y - 17, z - 17);
+			final BlockPos maxCachePos = new BlockPos(x + 17, y + 17, z + 17);
 			final int[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
 			final BooleanSupplier matcher = () -> Arrays.equals(oldModCounts, modCounts);
 			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new RegionAnalysisAITask(matcher, type, subSectionPos, () -> ShapeCache.create(world, minCachePos, maxCachePos), regions -> {

@@ -4,7 +4,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSubSectionRegions;
 import org.jetbrains.annotations.Nullable;
 
 public interface ChunkRegionGraph {
@@ -15,6 +15,6 @@ public interface ChunkRegionGraph {
 	interface Entry {
 		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type);
 
-		<T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegions<T, N> getRegions(ChunkSectionRegionType<T, N> type);
+		<T, N extends AIPathNode<T, N>> @Nullable ChunkSubSectionRegions<T, N> getRegions(ChunkSectionRegionType<T, N> type);
 	}
 }

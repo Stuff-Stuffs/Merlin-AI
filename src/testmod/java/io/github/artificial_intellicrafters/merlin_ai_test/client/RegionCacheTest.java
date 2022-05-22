@@ -2,7 +2,7 @@ package io.github.artificial_intellicrafters.merlin_ai_test.client;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionTypeRegistry;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSubSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.SubChunkSectionUtil;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
@@ -25,7 +25,10 @@ import net.minecraft.util.shape.BitSetVoxelSet;
 import org.lwjgl.glfw.GLFW;
 import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public final class RegionCacheTest {
 	public static final ChunkSectionRegionType<Entity, BasicAIPathNode> BASIC_REGION_TYPE;
@@ -43,14 +46,14 @@ public final class RegionCacheTest {
 				final ShapeCache cache = ShapeCache.create(client.world, minPos.add(-15, -15, -15), minPos.add(16, 16, 16));
 				final Int2IntMap counts = new Int2IntOpenHashMap();
 				final int MAX_REGION_COUNT = SubChunkSectionUtil.SUB_SECTION_SIZE * SubChunkSectionUtil.SUB_SECTION_SIZE * SubChunkSectionUtil.SUB_SECTION_SIZE;
-				Int2ReferenceMap<BitSetVoxelSet> voxelSets = new Int2ReferenceOpenHashMap<>();
+				final Int2ReferenceMap<BitSetVoxelSet> voxelSets = new Int2ReferenceOpenHashMap<>();
 				for (int x = 0; x < 16; x++) {
 					for (int y = 0; y < 16; y++) {
 						for (int z = 0; z < 16; z++) {
 							final int x0 = x + minPos.getX();
 							final int y0 = y + minPos.getY();
 							final int z0 = z + minPos.getZ();
-							final ChunkSectionRegions<Entity, BasicAIPathNode> region = cache.getRegions(x0, y0, z0, BASIC_REGION_TYPE);
+							final ChunkSubSectionRegions<Entity, BasicAIPathNode> region = cache.getRegions(x0, y0, z0, BASIC_REGION_TYPE);
 							if (region != null) {
 								final int containingRegion = region.getContainingRegion(x, y, z);
 								if (region.isValidRegion(containingRegion)) {
@@ -67,15 +70,16 @@ public final class RegionCacheTest {
 						voxelSets.remove(entry.getIntKey());
 					}
 				}
+				REGIONS.removeIf(renderRegion -> renderRegion.displayPos.equals(pos));
 				REGIONS.add(new RenderRegion(voxelSets, pos));
 			}
 		});
 		WorldRenderEvents.AFTER_ENTITIES.register(context -> {
-			for (RenderRegion region : REGIONS) {
+			for (final RenderRegion region : REGIONS) {
 				final MatrixStack stack = context.matrixStack();
 				stack.push();
 				stack.translate(-context.camera().getPos().x, -context.camera().getPos().y, -context.camera().getPos().z);
-				ChunkSectionPos displayPos = region.displayPos;
+				final ChunkSectionPos displayPos = region.displayPos;
 				stack.translate(displayPos.getMinX(), displayPos.getMinY(), displayPos.getMinZ());
 				final VertexConsumer vertexConsumer = context.consumers().getBuffer(RenderLayer.getLines());
 				final Matrix4f model = stack.peek().getModel();
@@ -100,7 +104,7 @@ public final class RegionCacheTest {
 		private final ChunkSectionPos displayPos;
 		private int displayTicks = 1000;
 
-		private RenderRegion(Int2ReferenceMap<BitSetVoxelSet> voxelSets, ChunkSectionPos displayPos) {
+		private RenderRegion(final Int2ReferenceMap<BitSetVoxelSet> voxelSets, final ChunkSectionPos displayPos) {
 			this.voxelSets = voxelSets;
 			this.displayPos = displayPos;
 		}

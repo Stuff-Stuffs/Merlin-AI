@@ -35,6 +35,6 @@ public class MerlinAI implements ModInitializer {
 
 	//TODO config
 	public static AITaskExecutor createExecutor() {
-		return new SingleThreadedAITaskExecutor(32);
+		return new SingleThreadedAITaskExecutor(255);
 	}
 }

@@ -62,7 +62,7 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	}
 
 	@Override
-	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode previous, final AStar.CostGetter costGetter, final Object[] successors) {
+	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode previous, boolean populatePredicates, final AStar.CostGetter costGetter, final Object[] successors) {
 		int i = 0;
 		BasicAIPathNode node;
 		node = createBasic(previous.x + 1, previous.y, previous.z, previous, cache, costGetter);

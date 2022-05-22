@@ -3,7 +3,7 @@ package io.github.artificial_intellicrafters.merlin_ai.api.util;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegionType;
-import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.region.ChunkSubSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -29,7 +29,7 @@ public interface ShapeCache extends BlockView {
 
 	boolean doesLocationSetExist(int x, int y, int z, ValidLocationSetType<?> type);
 
-	<T, N extends AIPathNode<T, N>> @Nullable ChunkSectionRegions<T, N> getRegions(int x, int y, int z, ChunkSectionRegionType<T, N> type);
+	<T, N extends AIPathNode<T, N>> @Nullable ChunkSubSectionRegions<T, N> getRegions(int x, int y, int z, ChunkSectionRegionType<T, N> type);
 
 	static int computeCacheSize(final BlockPos minPos, final BlockPos maxPos) {
 		if (minPos.compareTo(maxPos) >= 0) {
