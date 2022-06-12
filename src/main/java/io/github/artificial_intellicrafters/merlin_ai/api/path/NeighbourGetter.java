@@ -8,5 +8,5 @@ public interface NeighbourGetter<T, N extends AIPathNode<T, N>> {
 
 	@Nullable N createStartNode(ShapeCache cache, int x, int y, int z);
 
-	int getNeighbours(ShapeCache cache, N previous, AStar.CostGetter costGetter, Object[] successors);
+	int getNeighbours(ShapeCache cache, N previous, T context, AStar.CostGetter costGetter, Object[] successors);
 }
