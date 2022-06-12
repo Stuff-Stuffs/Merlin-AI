@@ -39,7 +39,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		blockStates = new BlockState[cacheSize];
 		collisionShapes = new VoxelShape[cacheSize];
 		Arrays.fill(keys, DEFAULT_KEY);
-		final int smallCacheSize = Math.max(cacheSize / 8, 16);
+		final int smallCacheSize = Math.max(cacheSize / 4, 16);
 		smallCacheMask = smallCacheSize - 1;
 		locationKeys = new long[smallCacheSize];
 		locationSets = new ValidLocationSet[smallCacheSize];

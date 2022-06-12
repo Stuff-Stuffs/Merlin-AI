@@ -17,8 +17,8 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	}
 
 	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		final BasicLocationType walkable = isWalkable(x, y + 1, z, shapeCache);
-		final BasicLocationType groundWalkable = isWalkable(x, y, z, shapeCache);
+		final BasicLocationType walkable = getLocationType(x, y + 1, z, shapeCache);
+		final BasicLocationType groundWalkable = getLocationType(x, y, z, shapeCache);
 		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable, prev);
 		}
@@ -26,14 +26,14 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	}
 
 	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && isWalkable(x, y, z, shapeCache) == BasicLocationType.OPEN) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && getLocationType(x, y, z, shapeCache) == BasicLocationType.OPEN) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN, prev);
 		}
 		return null;
 	}
 
 	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
-		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && isWalkable(x, y, z, shapeCache) == BasicLocationType.GROUND) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && getLocationType(x, y, z, shapeCache) == BasicLocationType.GROUND) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND, prev);
 		}
 		return null;
@@ -41,14 +41,14 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 
 	private BasicAIPathNode createAuto(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		final BasicLocationType type;
-		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && (type = isWalkable(x, y, z, shapeCache)) != BasicLocationType.CLOSED) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && (type = getLocationType(x, y, z, shapeCache)) != BasicLocationType.CLOSED) {
 			final boolean ground = type == BasicLocationType.GROUND;
 			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN, prev);
 		}
 		return null;
 	}
 
-	private BasicLocationType isWalkable(final int x, final int y, final int z, final ShapeCache shapeCache) {
+	private BasicLocationType getLocationType(final int x, final int y, final int z, final ShapeCache shapeCache) {
 		return shapeCache.getLocationType(x, y, z, locationSetType);
 	}
 

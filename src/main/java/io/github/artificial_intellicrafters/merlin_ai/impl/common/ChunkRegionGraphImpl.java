@@ -159,24 +159,22 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 
 		private <T> void enqueueLocationSet(long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSetImpl<T> previous) {
 			final BlockPos blockPos = pos.getMinPos();
-			final BlockPos minCachePos = blockPos.add(-15, -15, -15);
+			final BlockPos minCachePos = blockPos.add(-16, -16, -16);
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
 			final long[] newOldModCounts;
+			final BooleanSupplier matcher;
 			if (type.columnar()) {
 				newOldModCounts = toColumnar(modCounts);
 				oldModCounts = toColumnar(oldModCounts);
+				matcher = () ->
+						newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(-1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)] &&
+								newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(0)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)] &&
+								newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)];
 			} else {
 				newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
+				matcher = () -> Arrays.equals(newOldModCounts, modCounts);
 			}
-			final BooleanSupplier matcher = () ->
-					newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(-1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)] &&
-					newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(0)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)] &&
-					newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)];
-			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> {
-				if (matcher.getAsBoolean()) {
-					locationSetCache.put(type, locationSet);
-				}
-			}));
+			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> locationSetCache.put(type, locationSet)));
 			locationSetCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
 		}
 

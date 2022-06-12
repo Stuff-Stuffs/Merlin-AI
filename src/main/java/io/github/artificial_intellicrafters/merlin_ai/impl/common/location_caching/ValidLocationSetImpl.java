@@ -33,6 +33,9 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		}
 		mask = universeSize - 1;
 		bitCount = Integer.highestOneBit(mask);
+		if(bitCount>64) {
+			throw new RuntimeException();
+		}
 
 		data = new long[(16 * 16 * 16 * bitCount + 63) / 64];
 
@@ -57,6 +60,9 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetImpl<T> previous, final PathingChunkSection[] region, final long[] modCounts) {
 		mask = previous.mask;
 		bitCount = previous.bitCount;
+		if(bitCount>64) {
+			throw new RuntimeException();
+		}
 		universeInfo = previous.universeInfo;
 		data = Arrays.copyOf(previous.data, previous.data.length);
 		type = previous.type();

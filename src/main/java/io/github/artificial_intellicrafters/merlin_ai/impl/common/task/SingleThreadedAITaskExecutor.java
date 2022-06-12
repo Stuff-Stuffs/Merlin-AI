@@ -50,9 +50,13 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				}
 			}
 			if (task != null) {
-				final long preMillis = System.currentTimeMillis();
-				task.task.runIteration();
-				task.duration += System.currentTimeMillis() - preMillis;
+				if (MerlinAI.DEBUG) {
+					final long preMillis = System.currentTimeMillis();
+					task.task.runIteration();
+					task.duration += System.currentTimeMillis() - preMillis;
+				} else {
+					task.task.runIteration();
+				}
 			} else {
 				break;
 			}
