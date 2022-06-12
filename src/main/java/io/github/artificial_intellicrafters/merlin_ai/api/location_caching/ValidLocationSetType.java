@@ -10,4 +10,5 @@ public interface ValidLocationSetType<T> {
 
 	Class<T> typeClass();
 
+	boolean columnar();
 }

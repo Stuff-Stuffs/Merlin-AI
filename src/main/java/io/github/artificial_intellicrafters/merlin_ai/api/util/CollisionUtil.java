@@ -1,5 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.util.CuboidBlockIterator;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.Box;
@@ -21,18 +23,23 @@ public final class CollisionUtil {
 		return new CuboidBlockIterator(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 
-	public static boolean doesCollide(final Box box, final WorldCache world) {
+	public static boolean doesCollide(final Box box, final ShapeCache world) {
 		final CuboidBlockIterator blockIterator = collisionArea(box);
 		final VoxelShape boxShape = VoxelShapes.cuboid(box);
 		do {
 			final int x = blockIterator.getX();
 			final int y = blockIterator.getY();
 			final int z = blockIterator.getZ();
-			if (blockIterator.getEdgeCoordinatesCount() == 3) {
+			final int count = blockIterator.getEdgeCoordinatesCount();
+			if (count == 3) {
+				continue;
+			}
+			final BlockState state = world.getBlockState(x, y, z);
+			if (!((count != 1 || state.exceedsCube()) && (count != 2 || state.getBlock() == Blocks.MOVING_PISTON))) {
 				continue;
 			}
 			final VoxelShape voxelShape = world.getCollisionShape(x, y, z);
-			if (voxelShape != EMPTY) {
+			if (voxelShape != EMPTY && !voxelShape.isEmpty()) {
 				if (voxelShape == FULL_CUBE) {
 					if (box.intersects(x, y, z, x + 1, y + 1, z + 1)) {
 						return true;

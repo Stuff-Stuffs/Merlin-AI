@@ -1,130 +1,121 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
-public class TestNodeProducer implements NodeProducer {
-	private final Entity aiEntity;
-	private final World world;
+public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode> {
 	private final ValidLocationSetType<BasicLocationType> locationSetType;
-	private WorldCache worldCache;
 
-	public TestNodeProducer(final Entity aiEntity, final World world, final ValidLocationSetType<BasicLocationType> locationSetType) {
-		this.aiEntity = aiEntity;
-		this.world = world;
+	public TestNodeProducer(final ValidLocationSetType<BasicLocationType> locationSetType) {
 		this.locationSetType = locationSetType;
 	}
 
+	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		final BasicLocationType walkable = getLocationType(x, y + 1, z, shapeCache);
+		final BasicLocationType groundWalkable = getLocationType(x, y, z, shapeCache);
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable, prev);
+		}
+		return null;
+	}
 
-	@Override
-	public AIPathNode getStart(final WorldCache cache) {
-		final BlockPos pos = aiEntity.getBlockPos();
-		worldCache = cache;
-		final boolean walk = world.getBlockState(pos.down()).hasSolidTopSurface(world, pos.down(), aiEntity);
-		return new AIPathNode(pos.getX(), pos.getY(), pos.getZ(), 0, walk ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, null, walk);
+	private BasicAIPathNode createAir(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && getLocationType(x, y, z, shapeCache) == BasicLocationType.OPEN) {
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.OPEN, prev);
+		}
+		return null;
+	}
+
+	private BasicAIPathNode createBasic(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && getLocationType(x, y, z, shapeCache) == BasicLocationType.GROUND) {
+			return new BasicAIPathNode(x, y, z, prev.cost + 1, BasicLocationType.GROUND, prev);
+		}
+		return null;
+	}
+
+	private BasicAIPathNode createAuto(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
+		final BasicLocationType type;
+		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && (type = getLocationType(x, y, z, shapeCache)) != BasicLocationType.CLOSED) {
+			final boolean ground = type == BasicLocationType.GROUND;
+			return new BasicAIPathNode(x, y, z, prev.cost + (ground ? 10 : 1), ground ? BasicLocationType.GROUND : BasicLocationType.OPEN, prev);
+		}
+		return null;
+	}
+
+	private BasicLocationType getLocationType(final int x, final int y, final int z, final ShapeCache shapeCache) {
+		return shapeCache.getLocationType(x, y, z, locationSetType);
 	}
 
 	@Override
-	public int getNeighbours(final AIPathNode root, final AIPathNode[] successors) {
+	public @Nullable BasicAIPathNode createStartNode(final ShapeCache cache, final int x, final int y, final int z) {
+		final BasicLocationType locationType = cache.getLocationType(x, y, z, locationSetType);
+		if (locationType == BasicLocationType.CLOSED) {
+			return null;
+		}
+		return new BasicAIPathNode(x, y, z, 0, locationType, null);
+	}
+
+	@Override
+	public int getNeighbours(final ShapeCache cache, final BasicAIPathNode previous, final Entity context, final AStar.CostGetter costGetter, final Object[] successors) {
 		int i = 0;
-		AIPathNode node;
-		node = createBasic(root.x + 1, root.y, root.z, root);
+		BasicAIPathNode node;
+		node = createBasic(previous.x + 1, previous.y, previous.z, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(root.x - 1, root.y, root.z, root);
+		node = createBasic(previous.x - 1, previous.y, previous.z, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(root.x, root.y, root.z + 1, root);
+		node = createBasic(previous.x, previous.y, previous.z + 1, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
-		node = createBasic(root.x, root.y, root.z - 1, root);
+		node = createBasic(previous.x, previous.y, previous.z - 1, previous, cache, costGetter);
 		if (node != null) {
 			successors[i++] = node;
 		}
 
 		//FALL DIAGONAL
-		if (root.type != AIPathNode.Type.AIR) {
-			node = createDoubleHeightChecked(root.x + 1, root.y - 1, root.z, root);
+		if (previous.type == BasicLocationType.GROUND) {
+			node = createDoubleHeightChecked(previous.x + 1, previous.y - 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(root.x - 1, root.y - 1, root.z, root);
+			node = createDoubleHeightChecked(previous.x - 1, previous.y - 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(root.x, root.y - 1, root.z + 1, root);
+			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z + 1, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
-			node = createDoubleHeightChecked(root.x, root.y - 1, root.z - 1, root);
+			node = createDoubleHeightChecked(previous.x, previous.y - 1, previous.z - 1, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 
 		//Jump
-		if (root.type != AIPathNode.Type.AIR) {
-			node = createAir(root.x, root.y + 1, root.z, root);
+		if (previous.type == BasicLocationType.GROUND) {
+			node = createAir(previous.x, previous.y + 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 		//down
-		if (root.type != AIPathNode.Type.LAND) {
-			node = createAuto(root.x, root.y - 1, root.z, root);
+		if (previous.type == BasicLocationType.OPEN) {
+			node = createAuto(previous.x, previous.y - 1, previous.z, previous, cache, costGetter);
 			if (node != null) {
 				successors[i++] = node;
 			}
 		}
 		return i;
-	}
-
-	private AIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final AIPathNode prev) {
-		final BasicLocationType walkable = isWalkable(x, y + 1, z);
-		final BasicLocationType groundWalkable = isWalkable(x, y, z);
-		if (groundWalkable != BasicLocationType.CLOSED && walkable != BasicLocationType.CLOSED) {
-			return new AIPathNode(x, y, z, prev.distance + 1.25, groundWalkable == BasicLocationType.GROUND ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
-		}
-		return null;
-	}
-
-	private AIPathNode createAir(final int x, final int y, final int z, final AIPathNode prev) {
-		if (isWalkable(x, y, z) == BasicLocationType.OPEN) {
-			return new AIPathNode(x, y, z, prev.distance + 0.75, AIPathNode.Type.AIR, prev, true);
-		}
-		return null;
-	}
-
-	private AIPathNode createBasic(final int x, final int y, final int z, final AIPathNode prev) {
-		if (isWalkable(x, y, z) == BasicLocationType.GROUND) {
-			return new AIPathNode(x, y, z, prev.distance + 0.75, AIPathNode.Type.LAND, prev, true);
-		}
-		return null;
-	}
-
-	private AIPathNode createAuto(final int x, final int y, final int z, final AIPathNode prev) {
-		final BasicLocationType type = isWalkable(x, y, z);
-		if (type != BasicLocationType.CLOSED) {
-			final boolean ground = type == BasicLocationType.GROUND;
-			return new AIPathNode(x, y, z, prev.distance + (ground ? 0.75 : 1.25), ground ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, prev, true);
-		}
-		return null;
-	}
-
-	private BasicLocationType isWalkable(final int x, final int y, final int z) {
-		return worldCache.getLocationType(x, y, z, locationSetType);
-	}
-
-	@Override
-	public AIPathNode get(final int x, final int y, final int z) {
-		final BlockPos pos = new BlockPos(x, y, z);
-		final boolean walk = worldCache.getBlockState(pos.down()).hasSolidTopSurface(worldCache, pos.down(), aiEntity);
-		return new AIPathNode(x, y, z, 0, walk ? AIPathNode.Type.LAND : AIPathNode.Type.AIR, null, walk);
 	}
 }

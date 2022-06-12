@@ -1,8 +1,11 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.PathingChunkSection;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
 import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -16,7 +19,7 @@ import net.minecraft.world.chunk.ChunkSection;
 
 import java.util.Arrays;
 
-public class WorldCacheImpl extends ChunkCache implements WorldCache {
+public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(0, Integer.MAX_VALUE, 0));
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
 	private static final VoxelShape EMPTY = VoxelShapes.empty();
@@ -25,14 +28,40 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 	private final BlockPos.Mutable mutable = new BlockPos.Mutable();
 	private final BlockState[] blockStates;
 	private final VoxelShape[] collisionShapes;
+	private final int smallCacheMask;
+	private final long[] locationKeys;
+	private final ValidLocationSet<?>[] locationSets;
 
-	public WorldCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
+	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
 		cacheMask = cacheSize - 1;
 		keys = new long[cacheSize];
 		blockStates = new BlockState[cacheSize];
 		collisionShapes = new VoxelShape[cacheSize];
 		Arrays.fill(keys, DEFAULT_KEY);
+		final int smallCacheSize = Math.max(cacheSize / 4, 16);
+		smallCacheMask = smallCacheSize - 1;
+		locationKeys = new long[smallCacheSize];
+		locationSets = new ValidLocationSet[smallCacheSize];
+		Arrays.fill(locationKeys, DEFAULT_KEY);
+	}
+
+	@Override
+	public World getDelegate() {
+		return world;
+	}
+
+	@Override
+	public PathingChunkSection getPathingChunk(final int x, final int y, final int z) {
+		final Chunk chunk = getChunk(x >> 4, z >> 4);
+		if (chunk == null) {
+			return null;
+		}
+		final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+		if (section == null) {
+			return null;
+		}
+		return (PathingChunkSection) section;
 	}
 
 	private Chunk getChunk(final int chunkX, final int chunkZ) {
@@ -47,15 +76,40 @@ public class WorldCacheImpl extends ChunkCache implements WorldCache {
 
 	@Override
 	public <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> type) {
-		final Chunk chunk = getChunk(x >> 4, z >> 4);
-		if (chunk == null) {
-			return type.universeInfo().getDefaultValue();
+		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
+		final int pos = (int) (idx) & smallCacheMask;
+		if (locationKeys[pos] == idx && locationSets[pos].type() == type) {
+			return (T) locationSets[pos].get(x, y, z);
 		}
-		final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-		if (section == null) {
-			return type.universeInfo().getDefaultValue();
+		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
+		if (entry != null) {
+			final ValidLocationSet<T> set = entry.getValidLocationSet(type);
+			if (set != null) {
+				locationKeys[pos] = idx;
+				locationSets[pos] = set;
+				return set.get(x, y, z);
+			}
 		}
-		return ((PathingChunkSection) section).merlin_ai$getValidLocationSet(type, x, y, z, this).get(x, y, z);
+		return type.universeInfo().getDefaultValue();
+	}
+
+	@Override
+	public boolean doesLocationSetExist(final int x, final int y, final int z, final ValidLocationSetType<?> type) {
+		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
+		final int pos = (int) (idx) & smallCacheMask;
+		if (locationKeys[pos] == idx && locationSets[pos].type() == type) {
+			return true;
+		}
+		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
+		if (entry != null) {
+			final ValidLocationSet<?> set = entry.getValidLocationSet(type);
+			if (set != null) {
+				locationKeys[pos] = idx;
+				locationSets[pos] = set;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void populateCache(final int x, final int y, final int z, final long idx, final int pos) {

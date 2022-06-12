@@ -1,97 +1,59 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.util.WorldCache;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.objects.ObjectHeapPriorityQueue;
-import net.minecraft.entity.Entity;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
+import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.time.StopWatch;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-public class AIPather {
-	private final AIPathNode[] successors = new AIPathNode[64];
-	private final Entity aiEntity;
+public class AIPather<T, N extends AIPathNode<T, N>> {
 	private final World world;
-	private final NodeProducer nodeProducer;
+	private final NeighbourGetter<T, N> neighbourGetter;
+	private final Function<T, BlockPos> startingPositionRetriever;
 
-	public AIPather(final Entity aiEntity, final World world, final NodeProducer nodeProducer) {
-		this.aiEntity = aiEntity;
+	public AIPather(final World world, final NeighbourGetter<T, N> neighbourGetter, final Function<T, BlockPos> startingPositionRetriever) {
 		this.world = world;
-		this.nodeProducer = nodeProducer;
+		this.neighbourGetter = neighbourGetter;
+		this.startingPositionRetriever = startingPositionRetriever;
 	}
 
-	public NodeProducer getNodeProducer() {
-		return nodeProducer;
+	public @Nullable AIPath<T, N> calculatePath(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
+		if (MerlinAI.DEBUG) {
+			final StopWatch stopWatch = StopWatch.createStarted();
+			final PathInfo<T, N> info = find(pathTarget, max, partial, context);
+			stopWatch.stop();
+			final double v = stopWatch.getTime(TimeUnit.NANOSECONDS) / 1_000_000D;
+			System.out.println("Time: " + v);
+			System.out.println("Nodes considered: " + info.nodesConsidered());
+			System.out.println("Nodes/Second: " + (info.nodesConsidered() / (v / 1000)));
+			return info.path;
+		} else {
+			return find(pathTarget, max, partial, context).path();
+		}
 	}
 
-	public AIPath calculatePath(final PathTarget pathTarget, final double max, final boolean partial) {
-		final WorldCache cache = WorldCache.create(world, aiEntity.getBlockPos().add(-256, -256, -256), aiEntity.getBlockPos().add(256, 256, 256));
-		final AIPathNode start = nodeProducer.getStart(cache);
-		final StopWatch stopWatch = StopWatch.createStarted();
-		final double err = pathTarget.getRadius();
-		//TODO specialized heap implementation
-		final ObjectHeapPriorityQueue<AIPathNode> queue = new ObjectHeapPriorityQueue<>(Comparator.comparingDouble(i -> i.distToTarget + i.distance));
-		final LongSet visited = new LongOpenHashSet();
-		double bestDist = Double.POSITIVE_INFINITY;
-		AIPathNode best = null;
-		start.distToTarget = pathTarget.heuristic(start.x, start.y, start.z);
-		queue.enqueue(start);
-		visited.add(BlockPos.asLong(start.x, start.y, start.z));
-		while (!queue.isEmpty()) {
-			final AIPathNode current = queue.dequeue();
-			if (current.distance > max) {
-				continue;
-			}
-			if (current.distToTarget < bestDist) {
-				bestDist = current.distToTarget;
-				best = current;
-			}
-			if (current.previous != null) {
-				current.nodeCount = current.previous.nodeCount + 1;
-			} else {
-				current.nodeCount = 1;
-			}
-			if (pathTarget.heuristic(current.x, current.y, current.z) < err) {
-				stopWatch.stop();
-				final double v = stopWatch.getTime(TimeUnit.NANOSECONDS) / 1_000_000D;
-				System.out.println("Time: " + v);
-				System.out.println("Nodes considered: " + visited.size());
-				System.out.println("Nodes/Second: " + (visited.size() / (v / 1000)));
-				return toPath(current);
-			}
-			final int count = nodeProducer.getNeighbours(current, successors);
-			for (int i = 0; i < count; i++) {
-				final AIPathNode next = successors[i];
-				final long pos = BlockPos.asLong(next.x, next.y, next.z);
-				if (visited.add(pos)) {
-					next.distToTarget = pathTarget.heuristic(next.x, next.y, next.z);
-					queue.enqueue(next);
-				}
-			}
+	private PathInfo<T, N> find(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
+		final BlockPos startingPos = startingPositionRetriever.apply(context);
+		final ShapeCache cache = ShapeCache.create(world, startingPos.add(-256, -256, -256), startingPos.add(256, 256, 256));
+		final N startingNode = neighbourGetter.createStartNode(cache, startingPos.getX(), startingPos.getY(), startingPos.getZ());
+		if (startingNode == null) {
+			return new PathInfo<>(0, null);
 		}
-		stopWatch.stop();
-		final double v = stopWatch.getTime(TimeUnit.NANOSECONDS) / 1_000_000D;
-		System.out.println("Time: " + v);
-		System.out.println("Nodes considered: " + visited.size());
-		System.out.println("Nodes/Second: " + (visited.size() / (v / 1000)));
-		if (partial && best != null) {
-			return toPath(best);
+		final AStar.PathInfo<N> path = AStar.findPath(startingNode, context, node -> BlockPos.asLong(node.x, node.y, node.z), (previous, context1, costGetter, successors) -> neighbourGetter.getNeighbours(cache, previous, context1, costGetter, successors), node -> node.previous, node -> node.cost, node -> pathTarget.heuristic(node.x, node.y, node.z), pathTarget.getRadius(), max, partial);
+		if (path.path() == null) {
+			return new PathInfo<>(path.nodesConsidered(), null);
+		} else {
+			return new PathInfo<>(path.nodesConsidered(), new AIPath<>(path.path()));
 		}
-		return null;
 	}
 
-	private static AIPath toPath(AIPathNode node) {
-		final AIPathNode[] nodes = new AIPathNode[node.nodeCount];
-		for (int i = nodes.length - 1; i >= 0; i--) {
-			nodes[i] = node;
-			node = node.previous;
-		}
-		return new AIPath(nodes);
+	private record PathInfo<T, N extends AIPathNode<T, N>>(int nodesConsidered, @Nullable AIPath<T, N> path) {
 	}
 }

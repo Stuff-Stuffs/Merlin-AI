@@ -4,5 +4,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.NonExtendable
 public interface ValidLocationSet<T> {
+	ValidLocationSetType<T> type();
+
 	T get(final int x, final int y, final int z);
 }

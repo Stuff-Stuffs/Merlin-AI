@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 public interface ValidLocationSetTypeRegistry {
 	ValidLocationSetTypeRegistry INSTANCE = ValidLocationSetTypeRegistryImpl.INSTANCE;
 
-	<T> void register(UniverseInfo<T> universeInfo, ValidLocationClassifier<T> classifier, Class<T> typeClass, Identifier id);
+	<T> void register(UniverseInfo<T> universeInfo, ValidLocationClassifier<T> classifier, Class<T> typeClass, boolean columnar, Identifier id);
 
 	<T> @Nullable ValidLocationSetType<T> get(Class<T> typeClass, Identifier id);
 }
