@@ -1,6 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -8,10 +9,13 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 //TODO better name
 public interface ShapeCache extends BlockView {
 	World getDelegate();
+
+	@Nullable PathingChunkSection getPathingChunk(int x, int y, int z);
 
 	BlockState getBlockState(int x, int y, int z);
 

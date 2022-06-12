@@ -5,6 +5,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.ValidLocationSetImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -96,27 +97,24 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			this.pos = pos;
 			locationSetCache = new Reference2ReferenceOpenHashMap<>();
 			modCounts = new long[27];
-			modCounts[modCountIndex(0, 0, 0)] = section.merlin_ai$getModCount();
 			positions = new long[27];
 			final long packed = pos.asLong();
 			for (int x = -1; x <= 1; x++) {
 				for (int y = -1; y <= 1; y++) {
 					for (int z = -1; z <= 1; z++) {
-						final int index = modCountIndex(x, y, z);
+						final int index = ValidLocationAnalysisChunkSectionAITTask.index(x, y, z);
 						positions[index] = ChunkSectionPos.offset(packed, x, y, z);
-						modCounts[index] = -1;
+						modCounts[index] = 0;
 					}
 				}
 			}
-		}
-
-		private static int modCountIndex(final int x, final int y, final int z) {
-			return ((x + 1) * 3 + y + 1) * 3 + z + 1;
+			modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)] = section.merlin_ai$getModCount();
 		}
 
 		@Override
 		public synchronized @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type) {
 			boolean modPassing = true;
+			final long[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
 			final long[] modCounts = this.modCounts;
 			final long[] positions = this.positions;
 			assert modCounts.length == positions.length;
@@ -134,9 +132,9 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				} else {
 					section = entry.section;
 				}
-				if ((section == null && modCounts[i] != -1) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
+				if ((section == null && modCounts[i] != 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
 					if (section == null) {
-						modCounts[i] = -1;
+						modCounts[i] = 0;
 					} else {
 						modCounts[i] = section.merlin_ai$getModCount();
 					}
@@ -144,8 +142,9 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				}
 			}
 			if (!modPassing) {
+				final Object set = locationSetCache.get(type);
 				locationSetCache.clear();
-				enqueueLocationSet(type);
+				enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSetImpl<T>) set);
 				return null;
 			}
 			final Object set = locationSetCache.get(type);
@@ -153,23 +152,40 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				return null;
 			}
 			if (set == null) {
-				enqueueLocationSet(type);
+				enqueueLocationSet(oldModCounts, type, null);
 			}
 			return (ValidLocationSet<T>) set;
 		}
 
-		private synchronized void enqueueLocationSet(final ValidLocationSetType<?> type) {
+		private <T> void enqueueLocationSet(long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSetImpl<T> previous) {
 			final BlockPos blockPos = pos.getMinPos();
 			final BlockPos minCachePos = blockPos.add(-15, -15, -15);
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
-			final long[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
-			final BooleanSupplier matcher = () -> Arrays.equals(oldModCounts, modCounts);
-			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask(matcher, section::merlin_ai$getModCount, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> {
+			final long[] newOldModCounts;
+			if (type.columnar()) {
+				newOldModCounts = toColumnar(modCounts);
+				oldModCounts = toColumnar(oldModCounts);
+			} else {
+				newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
+			}
+			final BooleanSupplier matcher = () ->
+					newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(-1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)] &&
+					newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(0)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)] &&
+					newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)];
+			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> {
 				if (matcher.getAsBoolean()) {
 					locationSetCache.put(type, locationSet);
 				}
 			}));
 			locationSetCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
+		}
+
+		private long[] toColumnar(final long[] data) {
+			final long[] columnarData = new long[3];
+			columnarData[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(-1)] = data[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)];
+			columnarData[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(0)] = data[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)];
+			columnarData[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(1)] = data[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)];
+			return columnarData;
 		}
 	}
 }

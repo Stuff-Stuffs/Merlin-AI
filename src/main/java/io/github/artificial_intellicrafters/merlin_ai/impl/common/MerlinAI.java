@@ -12,12 +12,13 @@ import org.quiltmc.qsl.lifecycle.api.event.ServerWorldTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 public class MerlinAI implements ModInitializer {
 	public static final boolean DEBUG = QuiltLoader.isDevelopmentEnvironment();
 	//Object to be used in to represent a full but not complete object
 	public static final Object PLACEHOLDER_OBJECT = new Object();
+	public static final int PATHING_CHUNK_REMEMBERED_CHANGES = 16;
+	public static final boolean REMEMBERED_CHANGES_POWER_OF_TWO = (PATHING_CHUNK_REMEMBERED_CHANGES & (PATHING_CHUNK_REMEMBERED_CHANGES - 1)) == 0;
+	public static final int PATHING_CHUNK_CHANGES_BEFORE_RESET = 48;
 	public static final String MOD_ID = "merlin_ai";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 

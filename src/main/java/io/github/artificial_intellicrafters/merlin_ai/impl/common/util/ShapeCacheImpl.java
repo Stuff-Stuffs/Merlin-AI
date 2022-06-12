@@ -5,6 +5,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
 import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -48,6 +49,19 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	@Override
 	public World getDelegate() {
 		return world;
+	}
+
+	@Override
+	public PathingChunkSection getPathingChunk(final int x, final int y, final int z) {
+		final Chunk chunk = getChunk(x >> 4, z >> 4);
+		if (chunk == null) {
+			return null;
+		}
+		final ChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
+		if (section == null) {
+			return null;
+		}
+		return (PathingChunkSection) section;
 	}
 
 	private Chunk getChunk(final int chunkX, final int chunkZ) {
