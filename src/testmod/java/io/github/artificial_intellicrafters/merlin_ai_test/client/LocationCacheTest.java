@@ -17,11 +17,15 @@ import net.minecraft.client.option.KeyBind;
 import net.minecraft.entity.Entity;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.chunk.ChunkSection;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
+
+import java.util.Optional;
 
 public final class LocationCacheTest {
 	public static final ValidLocationSetType<BasicLocationType> ONE_X_TWO_BASIC_LOCATION_SET_TYPE;
@@ -35,7 +39,7 @@ public final class LocationCacheTest {
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
 				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
-				LAST_PATH = pather.calculatePath(PathTarget.yLevel(-32), 256, true, client.cameraEntity);
+				LAST_PATH = pather.calculatePath(PathTarget.createBlockTarget(16, new BlockPos(361, 0, -460)), 256, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;
 				}
@@ -43,7 +47,7 @@ public final class LocationCacheTest {
 		});
 		WorldRenderEvents.START.register(context -> {
 			if (LAST_PATH != null && REMAINING_VISIBLE_TICKS > 0) {
-				final DustParticleEffect effect = new DustParticleEffect(new Vec3f(1, 0, 0), 1);
+				final DustParticleEffect effect = new DustParticleEffect(new Vector3f(1, 0, 0), 1);
 				if (REMAINING_VISIBLE_TICKS % 10 == 0) {
 					for (final Object o : LAST_PATH.getNodes()) {
 						final BasicAIPathNode node = (BasicAIPathNode) o;
@@ -65,6 +69,31 @@ public final class LocationCacheTest {
 		ValidLocationSetTypeRegistry.INSTANCE.register(BasicLocationType.UNIVERSE_INFO, new ValidLocationClassifier<>() {
 			private static final Box BOX = new Box(0, 0, 0, 1, 2, 1);
 			private static final Box FLOOR = new Box(0, -1, 0, 1, 0, 1);
+
+			@Override
+			public Optional<BasicLocationType> fill(final ChunkSectionPos pos, final ShapeCache cache) {
+				final PathingChunkSection chunk = cache.getPathingChunk(pos.getMinX(), pos.getMinY(), pos.getMinZ());
+				if (chunk != null) {
+					if (chunk.flagCount(MerlinAITest.FULL_BLOCK) == 16 * 16 * 16) {
+						return Optional.of(BasicLocationType.CLOSED);
+					} else if (chunk.flagCount(MerlinAITest.AIR_BLOCK) == 16 * 16 * 16) {
+						return Optional.of(BasicLocationType.OPEN);
+					}
+				}
+				return Optional.empty();
+			}
+
+			@Override
+			public BasicLocationType postProcess(final BasicLocationType defaultVal, final int x, final int y, final int z, final ShapeCache cache) {
+				if (defaultVal == BasicLocationType.OPEN && y % 16 == 0) {
+					if (CollisionUtil.doesCollide(FLOOR.offset(x, y, z), cache)) {
+						return BasicLocationType.GROUND;
+					}
+					return BasicLocationType.OPEN;
+				} else {
+					return defaultVal;
+				}
+			}
 
 			@Override
 			public BasicLocationType classify(final int x, final int y, final int z, final ShapeCache cache) {

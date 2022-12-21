@@ -8,6 +8,7 @@ import net.minecraft.util.Identifier;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.qsl.base.api.entrypoint.ModInitializer;
+import org.quiltmc.qsl.lifecycle.api.event.ServerLifecycleEvents;
 import org.quiltmc.qsl.lifecycle.api.event.ServerWorldTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +22,11 @@ public class MerlinAI implements ModInitializer {
 	public static final int PATHING_CHUNK_CHANGES_BEFORE_RESET = 48;
 	public static final String MOD_ID = "merlin_ai";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+	public static boolean FROZEN = false;
 
 	@Override
 	public void onInitialize(final ModContainer mod) {
+		ServerLifecycleEvents.STARTING.register(server -> FROZEN = true);
 		ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).load(chunk));
 		ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).unload(chunk));
 

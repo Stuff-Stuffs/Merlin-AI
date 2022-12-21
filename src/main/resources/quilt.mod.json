@@ -21,18 +21,6 @@
 			"client_init": "io.github.artificial_intellicrafters.merlin_ai.impl.client.MerlinAIClient"
 		},
 		"depends": [
-			{
-				"id": "quilt_loader",
-				"versions": ">=0.16.0-"
-			},
-			{
-				"id": "quilted_fabric_api",
-				"versions": ">=1.0.0-"
-			},
-			{
-				"id": "minecraft",
-				"versions": ">=1.18.2"
-			}
 		]
 	},
 	"mixin": "merlin_ai.mixins.json"

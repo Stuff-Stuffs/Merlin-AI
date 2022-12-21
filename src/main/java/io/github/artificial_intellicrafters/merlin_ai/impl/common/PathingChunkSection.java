@@ -1,9 +1,12 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.block_equivalence.BlockFlag;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.ChunkSectionPos;
 
 public interface PathingChunkSection {
+	int flagCount(BlockFlag flag);
+
 	long merlin_ai$getModCount();
 
 	boolean merlin_ai$copy_updates(long lastModCount, BlockState[] updateStateArray, int updateStateArrayIndex, short[] updatePosArray, int updatePosArrayIndex);

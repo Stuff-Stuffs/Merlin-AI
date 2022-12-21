@@ -21,6 +21,7 @@ public final class AStar {
 		double bestDist = Double.POSITIVE_INFINITY;
 		WrappedPathNode<T> best = null;
 		final WrappedPathNode<T> wrappedStart = wrap(start, 1, heuristic);
+		long c = 0;
 		wrappedStart.handle = queue.insert(wrappedStart.heuristicDistance + cost.applyAsDouble(wrappedStart.delegate), wrappedStart);
 		visited.put(keyGetter.applyAsLong(start), wrappedStart);
 		final CostGetter costGetter = key -> {
@@ -48,6 +49,7 @@ public final class AStar {
 			}
 			//Get adjacent nodes, fill the array with them, return how many neighbours were found
 			final int count = neighbourGetter.getNeighbours(current.delegate, context, costGetter, successors);
+			c++;
 			//For each neighbour found
 			for (int i = 0; i < count; i++) {
 				final T next = (T) successors[i];
@@ -59,7 +61,7 @@ public final class AStar {
 					//Enqueue node to be processed
 					wrapped.handle = queue.insert(wrapped.heuristicDistance + cost.applyAsDouble(wrapped.delegate), wrapped);
 				} else {
-					//We check if this node faster to get to than the currently existing one,  I add a small constant because sometimes a path is every so slightly short(example 0.0001 shorter path).
+					//We check if this node faster to get to than the currently existing one,  I add a small constant because sometimes a path is every so slightly shorter(example 0.0001 shorter path), sometimes this is due to weird heuristics, other times it is due to fp rounding weirdness.
 					//This is not worth the computation time to consider
 					final double v = cost.applyAsDouble(next);
 					if (v + 0.1 < cost.applyAsDouble(node.delegate)) {
@@ -76,6 +78,7 @@ public final class AStar {
 				}
 			}
 		}
+		System.out.println(c);
 		return best == null ? new PathInfo<>(visited.size(), null) : partial ? createPath(visited.size(), best, previousNodeGetter) : new PathInfo<>(visited.size(), null);
 	}
 

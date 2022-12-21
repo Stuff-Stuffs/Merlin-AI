@@ -12,6 +12,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.util.math.ChunkSectionPos;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final int mask;
@@ -33,7 +34,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		}
 		mask = universeSize - 1;
 		bitCount = Integer.highestOneBit(mask);
-		if(bitCount>64) {
+		if (bitCount > 64) {
 			throw new RuntimeException();
 		}
 
@@ -42,15 +43,32 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		final int baseX = sectionPos.getMinX();
 		final int baseY = sectionPos.getMinY();
 		final int baseZ = sectionPos.getMinZ();
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 16; y++) {
-				for (int z = 0; z < 16; z++) {
-					final T val = classifier.classify(baseX + x, baseY + y, baseZ + z, cache);
-					final int index = byteIndex(x & 15, y & 15, z & 15);
-					final int subIndex = subIndex(x & 15, y & 15, z & 15);
-					long datum = data[index];
-					datum = datum | (long) (universeInfo.toInt(val) & mask) << subIndex;
-					data[index] = datum;
+		final Optional<T> fill = classifier.fill(sectionPos, cache);
+		if (fill.isPresent()) {
+			final T defaultVal = fill.get();
+			for (int x = 0; x < 16; x++) {
+				for (int y = 0; y < 16; y++) {
+					for (int z = 0; z < 16; z++) {
+						final T val = classifier.postProcess(defaultVal, baseX + x, baseY + y, baseZ + z, cache);
+						final int index = byteIndex(x & 15, y & 15, z & 15);
+						final int subIndex = subIndex(x & 15, y & 15, z & 15);
+						long datum = data[index];
+						datum = datum | (long) (universeInfo.toInt(val) & mask) << subIndex;
+						data[index] = datum;
+					}
+				}
+			}
+		} else {
+			for (int x = 0; x < 16; x++) {
+				for (int y = 0; y < 16; y++) {
+					for (int z = 0; z < 16; z++) {
+						final T val = classifier.classify(baseX + x, baseY + y, baseZ + z, cache);
+						final int index = byteIndex(x & 15, y & 15, z & 15);
+						final int subIndex = subIndex(x & 15, y & 15, z & 15);
+						long datum = data[index];
+						datum = datum | (long) (universeInfo.toInt(val) & mask) << subIndex;
+						data[index] = datum;
+					}
 				}
 			}
 		}
@@ -60,7 +78,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetImpl<T> previous, final PathingChunkSection[] region, final long[] modCounts) {
 		mask = previous.mask;
 		bitCount = previous.bitCount;
-		if(bitCount>64) {
+		if (bitCount > 64) {
 			throw new RuntimeException();
 		}
 		universeInfo = previous.universeInfo;

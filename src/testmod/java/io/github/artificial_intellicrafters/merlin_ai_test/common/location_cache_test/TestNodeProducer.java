@@ -19,7 +19,7 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	private BasicAIPathNode createDoubleHeightChecked(final int x, final int y, final int z, final BasicAIPathNode prev, final ShapeCache shapeCache, final AStar.CostGetter costGetter) {
 		final BasicLocationType walkable = getLocationType(x, y + 1, z, shapeCache);
 		final BasicLocationType groundWalkable = getLocationType(x, y, z, shapeCache);
-		if (costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1 && groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN) {
+		if (groundWalkable != BasicLocationType.CLOSED && walkable == BasicLocationType.OPEN && costGetter.cost(BlockPos.asLong(x, y, z)) > prev.cost + 1) {
 			return new BasicAIPathNode(x, y, z, prev.cost + 1, groundWalkable, prev);
 		}
 		return null;

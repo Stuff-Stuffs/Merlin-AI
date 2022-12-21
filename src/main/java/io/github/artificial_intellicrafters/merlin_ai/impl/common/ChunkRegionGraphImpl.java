@@ -104,7 +104,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 					for (int z = -1; z <= 1; z++) {
 						final int index = ValidLocationAnalysisChunkSectionAITTask.index(x, y, z);
 						positions[index] = ChunkSectionPos.offset(packed, x, y, z);
-						modCounts[index] = 0;
+						modCounts[index] = -1;
 					}
 				}
 			}
@@ -112,7 +112,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public synchronized @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type) {
+		public @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type) {
 			boolean modPassing = true;
 			final long[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
 			final long[] modCounts = this.modCounts;
@@ -132,7 +132,12 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				} else {
 					section = entry.section;
 				}
-				if ((section == null && modCounts[i] != 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
+				if (modCounts[i] == -1) {
+					if (section != null) {
+						modCounts[i] = section.merlin_ai$getModCount();
+					}
+				}
+				if ((section == null && modCounts[i] > 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
 					if (section == null) {
 						modCounts[i] = 0;
 					} else {

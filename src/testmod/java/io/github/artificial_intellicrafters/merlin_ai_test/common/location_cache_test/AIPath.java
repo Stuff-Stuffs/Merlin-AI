@@ -1,12 +1,10 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 
 import java.util.List;
 
-public final class AIPath<T, N extends AIPathNode<T,N>> {
+public final class AIPath<T, N extends AIPathNode<T, N>> {
 	private final Object[] nodes;
 	private int index = 0;
 
@@ -32,7 +30,7 @@ public final class AIPath<T, N extends AIPathNode<T,N>> {
 		return (N) nodes[nodes.length - 1];
 	}
 
-	@Environment(EnvType.CLIENT)
+	@Deprecated
 	public Object[] getNodes() {
 		return nodes;
 	}
