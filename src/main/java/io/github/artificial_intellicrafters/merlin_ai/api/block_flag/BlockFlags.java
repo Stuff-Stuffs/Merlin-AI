@@ -1,4 +1,4 @@
-package io.github.artificial_intellicrafters.merlin_ai.api.block_equivalence;
+package io.github.artificial_intellicrafters.merlin_ai.api.block_flag;
 
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import net.minecraft.block.BlockState;

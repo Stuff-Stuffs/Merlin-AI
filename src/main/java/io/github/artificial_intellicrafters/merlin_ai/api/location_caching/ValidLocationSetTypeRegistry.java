@@ -1,5 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.location_caching;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.util.UniverseInfo;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.ValidLocationSetTypeRegistryImpl;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.ApiStatus;

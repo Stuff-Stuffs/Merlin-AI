@@ -1,6 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.UniverseInfo;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.UniverseInfo;
 
 public enum BasicLocationType {
 	CLOSED(0),

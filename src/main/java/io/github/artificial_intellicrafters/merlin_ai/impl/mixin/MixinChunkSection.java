@@ -1,6 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.mixin;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.block_equivalence.BlockFlag;
+import io.github.artificial_intellicrafters.merlin_ai.api.block_flag.BlockFlag;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.BlockStateFlagCounter;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.ExtendedBlockState;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;

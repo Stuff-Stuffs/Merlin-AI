@@ -1,6 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.UniverseInfo;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.UniverseInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
@@ -19,9 +19,11 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final int bitCount;
 	private final UniverseInfo<T> universeInfo;
 	private final long[] data;
+	private final long revision;
 	private final ValidLocationSetType<T> type;
 
 	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType) {
+		revision = 0;
 		final ValidLocationClassifier<T> classifier = setType.classifier();
 		universeInfo = setType.universeInfo();
 		int universeSize = universeInfo.getUniverseSize();
@@ -87,12 +89,17 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		final BlockState[] updatedBlockStates = new BlockState[MerlinAI.PATHING_CHUNK_REMEMBERED_CHANGES];
 		final short[] updatedPositions = new short[MerlinAI.PATHING_CHUNK_REMEMBERED_CHANGES];
 		final UniverseInfo<T> universeInfo = type().universeInfo();
+		final boolean[] modified = new boolean[1];
 		final ValidLocationClassifier.RebuildConsumer<T> rebuildConsumer = (val, x, y, z) -> {
 			final int index = byteIndex(x & 15, y & 15, z & 15);
 			final int subIndex = subIndex(x & 15, y & 15, z & 15);
 			long datum = data[index];
-			datum = (datum & ~((long) mask << subIndex)) | (long) (universeInfo.toInt(val) & mask) << subIndex;
-			data[index] = datum;
+			final long l = (universeInfo.toInt(val) & mask);
+			if (((datum >> subIndex) & mask) != l) {
+				modified[0] = true;
+				datum = (datum & ~((long) mask << subIndex)) | l << subIndex;
+				data[index] = datum;
+			}
 		};
 		final ValidLocationClassifier<T> classifier = type.classifier();
 		if (type.columnar()) {
@@ -124,11 +131,21 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 				}
 			}
 		}
+		if (modified[0]) {
+			revision = previous.revision() + 1;
+		} else {
+			revision = previous.revision();
+		}
 	}
 
 	@Override
 	public ValidLocationSetType<T> type() {
 		return type;
+	}
+
+	@Override
+	public long revision() {
+		return revision;
 	}
 
 	@Override

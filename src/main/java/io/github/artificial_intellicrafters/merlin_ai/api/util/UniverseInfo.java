@@ -1,4 +1,4 @@
-package io.github.artificial_intellicrafters.merlin_ai.api.location_caching;
+package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
 import java.util.function.ToIntFunction;
 

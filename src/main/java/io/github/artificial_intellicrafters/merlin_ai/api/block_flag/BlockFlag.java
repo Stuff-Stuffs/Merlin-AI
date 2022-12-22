@@ -1,4 +1,4 @@
-package io.github.artificial_intellicrafters.merlin_ai.api.block_equivalence;
+package io.github.artificial_intellicrafters.merlin_ai.api.block_flag;
 
 import net.minecraft.block.BlockState;
 import org.jetbrains.annotations.ApiStatus;

@@ -1,7 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.block_equivalence.BlockFlag;
-import io.github.artificial_intellicrafters.merlin_ai.api.block_equivalence.BlockFlags;
+import io.github.artificial_intellicrafters.merlin_ai.api.block_flag.BlockFlag;
+import io.github.artificial_intellicrafters.merlin_ai.api.block_flag.BlockFlags;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.shape.VoxelShapes;
 import org.quiltmc.loader.api.ModContainer;
