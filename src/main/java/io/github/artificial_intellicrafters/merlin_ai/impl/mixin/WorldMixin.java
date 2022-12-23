@@ -25,4 +25,14 @@ public class WorldMixin implements AIWorld {
 	public ChunkRegionGraph merlin_ai$getChunkGraph() {
 		return regionGraph;
 	}
+
+	@Override
+	public long size() {
+		return regionGraph.size();
+	}
+
+	@Override
+	public long denseSize() {
+		return regionGraph.denseSize();
+	}
 }

@@ -10,6 +10,10 @@ public interface ChunkRegionGraph {
 
 	@Nullable Entry getEntry(int x, int y, int z);
 
+	long size();
+
+	long denseSize();
+
 	interface Entry {
 		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type);
 	}

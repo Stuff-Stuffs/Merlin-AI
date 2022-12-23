@@ -1,5 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.AStar;
@@ -33,6 +34,8 @@ public class AIPather<T, N extends AIPathNode<T, N>> {
 			System.out.println("Time: " + v);
 			System.out.println("Nodes considered: " + info.nodesConsidered());
 			System.out.println("Nodes/Second: " + (info.nodesConsidered() / (v / 1000)));
+			System.out.println("Size: " + ((AIWorld) world).size());
+			System.out.println("Dense size: " + ((AIWorld) world).denseSize());
 			return info.path;
 		} else {
 			return find(pathTarget, max, partial, context).path();

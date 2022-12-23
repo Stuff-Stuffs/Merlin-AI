@@ -6,4 +6,8 @@ public interface AIWorld {
 	AITaskExecutor merlin_ai$getTaskExecutor();
 
 	ChunkRegionGraph merlin_ai$getChunkGraph();
+
+	long size();
+
+	long denseSize();
 }

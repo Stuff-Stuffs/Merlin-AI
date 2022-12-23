@@ -17,7 +17,6 @@ import net.minecraft.client.option.KeyBind;
 import net.minecraft.entity.Entity;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.chunk.ChunkSection;
@@ -39,7 +38,7 @@ public final class LocationCacheTest {
 		ClientTickEvents.START.register(client -> {
 			if (PATH_KEYBIND.wasPressed()) {
 				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
-				LAST_PATH = pather.calculatePath(PathTarget.createBlockTarget(16, new BlockPos(361, 0, -460)), 256, true, client.cameraEntity);
+				LAST_PATH = pather.calculatePath(PathTarget.yLevel(0), 256, true, client.cameraEntity);
 				if (LAST_PATH != null) {
 					REMAINING_VISIBLE_TICKS = 6000;
 				}

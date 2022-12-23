@@ -5,7 +5,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.ValidLocationSetImpl;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.DenseValidLocationSetImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -54,7 +54,33 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 
 	@Override
 	public @Nullable EntryImpl getEntry(final int x, final int y, final int z) {
-		return getEntry(ChunkSectionPos.from(new BlockPos(x, y, z)).asLong());
+		return getEntry(ChunkSectionPos.asLong(ChunkSectionPos.getSectionCoord(x), ChunkSectionPos.getSectionCoord(y), ChunkSectionPos.getSectionCoord(z)));
+	}
+
+	@Override
+	public long size() {
+		long sum = 0;
+		for (EntryImpl entry : entries.values()) {
+			for (Object o : entry.locationSetCache.values()) {
+				if(o instanceof ValidLocationSet<?> set) {
+					sum += set.size();
+				}
+			}
+		}
+		return sum;
+	}
+
+	@Override
+	public long denseSize() {
+		long sum = 0;
+		for (EntryImpl entry : entries.values()) {
+			for (Map.Entry<ValidLocationSetType<?>, Object> objectEntry : entry.locationSetCache.entrySet()) {
+				if(objectEntry.getValue() instanceof ValidLocationSet<?> set) {
+					sum += DenseValidLocationSetImpl.bits(objectEntry.getKey().universeInfo());
+				}
+			}
+		}
+		return sum;
 	}
 
 	public EntryImpl getEntry(final long pos) {
@@ -149,7 +175,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			if (!modPassing) {
 				final Object set = locationSetCache.get(type);
 				locationSetCache.clear();
-				enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSetImpl<T>) set);
+				enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSet<T>) set);
 				return null;
 			}
 			final Object set = locationSetCache.get(type);
@@ -162,7 +188,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			return (ValidLocationSet<T>) set;
 		}
 
-		private <T> void enqueueLocationSet(long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSetImpl<T> previous) {
+		private <T> void enqueueLocationSet(long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSet<T> previous) {
 			final BlockPos blockPos = pos.getMinPos();
 			final BlockPos minCachePos = blockPos.add(-16, -16, -16);
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
