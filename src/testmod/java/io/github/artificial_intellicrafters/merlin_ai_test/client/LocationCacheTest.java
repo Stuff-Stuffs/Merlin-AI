@@ -93,9 +93,9 @@ public final class LocationCacheTest {
 			}
 			final Vec3d d = context.camera().getPos();
 			if (LAST_REGIONS_POS != null && REMAINING_VISIBLE_REGION_TICKS > 0) {
-				for (int offX = -2; offX <= 2; offX++) {
-					for (int offY = -2; offY <= 2; offY++) {
-						for (int offZ = -2; offZ <= 2; offZ++) {
+				for (int offX = -1; offX <= 1; offX++) {
+					for (int offY = -1; offY <= 1; offY++) {
+						for (int offZ = -1; offZ <= 1; offZ++) {
 							final ChunkRegionGraph.Entry entry1 = ((AIWorld) MinecraftClient.getInstance().world).merlin_ai$getChunkGraph().getEntry(LAST_REGIONS_POS.getMinX() + offX * 16, LAST_REGIONS_POS.getMinY() + offY * 16, LAST_REGIONS_POS.getMinZ() + offZ * 16);
 							final ChunkSectionRegions lastRegions = entry1 == null ? null : entry1.getRegions(HIERARCHY_INFO, context.world().getTime());
 							if (lastRegions != null) {
@@ -115,7 +115,7 @@ public final class LocationCacheTest {
 								context.matrixStack().translate(-d.x + LAST_REGIONS_POS.getMinX() + offX * 16, -d.y + LAST_REGIONS_POS.getMinY() + offY * 16, -d.z + LAST_REGIONS_POS.getMinZ() + offZ * 16);
 								final Matrix4f matrix = context.matrixStack().peek().getModel();
 								for (final Long2ObjectMap.Entry<VoxelSet> entry : sets.long2ObjectEntrySet()) {
-									final int color = (int) HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getLongKey())) | 0xFF00_0000;
+									final int color = (int) HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getLongKey() + LAST_REGIONS_POS.add(offX, offY, offZ).asLong())) | 0xFF00_0000;
 									entry.getValue().forEachEdge((i, j, k, l, m, n) -> {
 										final Vec3d start = new Vec3d(i, j, k);
 										final Vec3d end = new Vec3d(l, m, n);
