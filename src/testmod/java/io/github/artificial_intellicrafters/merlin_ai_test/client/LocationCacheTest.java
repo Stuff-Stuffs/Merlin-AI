@@ -93,9 +93,9 @@ public final class LocationCacheTest {
 			}
 			final Vec3d d = context.camera().getPos();
 			if (LAST_REGIONS_POS != null && REMAINING_VISIBLE_REGION_TICKS > 0) {
-				for (int offX = -0; offX < 1; offX++) {
-					for (int offY = -0; offY < 1; offY++) {
-						for (int offZ = -0; offZ < 1; offZ++) {
+				for (int offX = -2; offX <= 2; offX++) {
+					for (int offY = -2; offY <= 2; offY++) {
+						for (int offZ = -2; offZ <= 2; offZ++) {
 							final ChunkRegionGraph.Entry entry1 = ((AIWorld) MinecraftClient.getInstance().world).merlin_ai$getChunkGraph().getEntry(LAST_REGIONS_POS.getMinX() + offX * 16, LAST_REGIONS_POS.getMinY() + offY * 16, LAST_REGIONS_POS.getMinZ() + offZ * 16);
 							final ChunkSectionRegions lastRegions = entry1 == null ? null : entry1.getRegions(HIERARCHY_INFO, context.world().getTime());
 							if (lastRegions != null) {
