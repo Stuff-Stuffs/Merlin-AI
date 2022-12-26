@@ -10,6 +10,7 @@ import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class SingleThreadedAITaskExecutor implements AITaskExecutor {
+	private static final int MAX_ATTEMPTS = 64;
 	private final PriorityQueue<WrappedTask> taskQueue;
 	private final ConcurrentLinkedDeque<WrappedTask> canceled;
 	private final int maxWaitingTasks;
@@ -49,7 +50,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				if (task == null) {
 					break;
 				}
-				if (task.task.done()) {
+				if (task.attempts > MAX_ATTEMPTS || task.task.done()) {
 					taskQueue.poll();
 					finished.add(task);
 				} else {
@@ -60,6 +61,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				if (MerlinAI.DEBUG) {
 					final long preMillis = System.currentTimeMillis();
 					task.task.runIteration();
+					task.attempts++;
 					task.duration += System.currentTimeMillis() - preMillis;
 				} else {
 					task.task.runIteration();
@@ -80,6 +82,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 		private final AITask task;
 		private final long order;
 		private long duration = 0;
+		private int attempts = 0;
 
 		private WrappedTask(final AITask task, final long order) {
 			this.task = task;
