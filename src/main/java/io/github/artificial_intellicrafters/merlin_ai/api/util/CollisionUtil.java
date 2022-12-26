@@ -35,7 +35,7 @@ public final class CollisionUtil {
 				continue;
 			}
 			final BlockState state = world.getBlockState(x, y, z);
-			if (!((count != 1 || state.exceedsCube()) && (count != 2 || state.getBlock() == Blocks.MOVING_PISTON))) {
+			if (state.isAir() || !((count != 1 || state.exceedsCube()) && (count != 2 || state.getBlock() == Blocks.MOVING_PISTON))) {
 				continue;
 			}
 			final VoxelShape voxelShape = world.getCollisionShape(x, y, z);

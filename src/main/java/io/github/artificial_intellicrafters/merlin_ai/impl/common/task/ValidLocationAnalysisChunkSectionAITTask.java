@@ -23,10 +23,11 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 	private final ChunkSectionPos pos;
 	private final Supplier<ShapeCache> cacheFactory;
 	private final Consumer<ValidLocationSet<T>> completionConsumer;
+	private final Runnable cancel;
 	private ValidLocationSetImpl<T> output = null;
 	private boolean finished = false;
 
-	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final long[] currentModCounts, @Nullable final ValidLocationSetImpl<T> previous, final ValidLocationSetType<T> type, final ChunkSectionPos pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<T>> completionConsumer) {
+	public ValidLocationAnalysisChunkSectionAITTask(final BooleanSupplier shouldContinue, final long[] currentModCounts, @Nullable final ValidLocationSetImpl<T> previous, final ValidLocationSetType<T> type, final ChunkSectionPos pos, final Supplier<ShapeCache> cacheFactory, final Consumer<ValidLocationSet<T>> completionConsumer, final Runnable cancel) {
 		this.shouldContinue = shouldContinue;
 		this.currentModCounts = currentModCounts;
 		this.previous = previous;
@@ -34,6 +35,7 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 		this.pos = pos;
 		this.cacheFactory = cacheFactory;
 		this.completionConsumer = completionConsumer;
+		this.cancel = cancel;
 	}
 
 	@Override
@@ -59,11 +61,17 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 				for (int i = -1; i <= 1; i++) {
 					for (int j = -1; j <= 1; j++) {
 						for (int k = -1; k <= 1; k++) {
-							region[index(i, j, k)] = cache.getPathingChunk(
-									pos.getMinX() + ChunkSection.SECTION_WIDTH * i,
-									pos.getMinY() + ChunkSection.SECTION_HEIGHT * j,
-									pos.getMinZ() + ChunkSection.SECTION_WIDTH * k
-							);
+							if (!cache.isOutOfHeightLimit(pos.getMinY() + ChunkSection.SECTION_HEIGHT * j)) {
+								final PathingChunkSection chunk = cache.getPathingChunk(
+										pos.getMinX() + ChunkSection.SECTION_WIDTH * i,
+										pos.getMinY() + ChunkSection.SECTION_HEIGHT * j,
+										pos.getMinZ() + ChunkSection.SECTION_WIDTH * k
+								);
+								if (chunk == null) {
+									return;
+								}
+								region[index(i, j, k)] = chunk;
+							}
 						}
 					}
 				}
@@ -100,11 +108,17 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 			if (previous != null) {
 				final PathingChunkSection[] region = new PathingChunkSection[3];
 				for (int j = -1; j <= 1; j++) {
-					region[indexColumnar(j)] = cache.getPathingChunk(
-							pos.getMinX(),
-							pos.getMinY() + ChunkSection.SECTION_HEIGHT * j,
-							pos.getMinZ()
-					);
+					if (!cache.isOutOfHeightLimit(pos.getMinY() + ChunkSection.SECTION_HEIGHT * j)) {
+						final PathingChunkSection chunk = cache.getPathingChunk(
+								pos.getMinX(),
+								pos.getMinY() + ChunkSection.SECTION_HEIGHT * j,
+								pos.getMinZ()
+						);
+						if (chunk == null) {
+							return;
+						}
+						region[indexColumnar(j)] = chunk;
+					}
 				}
 				boolean recoverable = true;
 				int sum = 0;
@@ -148,7 +162,14 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 		}
 		if (output != null) {
 			completionConsumer.accept(output);
-			finished = true;
+		} else {
+			cancel.run();
 		}
+		finished = true;
+	}
+
+	@Override
+	public void cancel() {
+		cancel.run();
 	}
 }

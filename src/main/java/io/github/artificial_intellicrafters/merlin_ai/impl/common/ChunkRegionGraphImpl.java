@@ -1,11 +1,16 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common;
 
+import com.mojang.datafixers.util.Pair;
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
 import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.ValidLocationSetImpl;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkSectionRegionsAnalysisAITask;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -89,15 +94,21 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		private final ChunkSectionPos pos;
 		private final PathingChunkSection section;
 		private final Map<ValidLocationSetType<?>, Object> locationSetCache;
+		private final Map<HierarchyInfo<?, ?, ?, ?>, Object> regionsCache;
 		private final long[] modCounts;
 		private final long[] positions;
+		private final long[] regionsModCounts;
+		private long lastTickAccessed = Long.MIN_VALUE;
+		private long lastTickAccessedRegions = Long.MIN_VALUE;
 
 		public EntryImpl(final PathingChunkSection section, final ChunkSectionPos pos) {
 			this.section = section;
 			this.pos = pos;
 			locationSetCache = new Reference2ReferenceOpenHashMap<>();
+			regionsCache = new Reference2ReferenceOpenHashMap<>();
 			modCounts = new long[27];
 			positions = new long[27];
+			regionsModCounts = new long[27];
 			final long packed = pos.asLong();
 			for (int x = -1; x <= 1; x++) {
 				for (int y = -1; y <= 1; y++) {
@@ -112,54 +123,123 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type) {
+		public @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type, final long tick) {
 			boolean modPassing = true;
-			final long[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
-			final long[] modCounts = this.modCounts;
-			final long[] positions = this.positions;
-			assert modCounts.length == positions.length;
-			for (int i = 0; i < modCounts.length; i++) {
-				final EntryImpl entry = entries.get(positions[i]);
-				PathingChunkSection section = null;
-				if (entry == null) {
-					final WorldChunk chunk = chunks.get(positions[i]);
-					if (chunk != null) {
-						final int y = ChunkSectionPos.unpackY(positions[i]);
-						if (!world.isOutOfHeightLimit(y << 4)) {
-							section = (PathingChunkSection) chunk.getSectionArray()[world.sectionCoordToIndex(y)];
+			if (lastTickAccessed != tick) {
+				lastTickAccessed = tick;
+				final long[] oldModCounts = Arrays.copyOf(modCounts, modCounts.length);
+				final long[] modCounts = this.modCounts;
+				final long[] positions = this.positions;
+				assert modCounts.length == positions.length;
+				for (int i = 0; i < modCounts.length; i++) {
+					final EntryImpl entry = entries.get(positions[i]);
+					PathingChunkSection section = null;
+					if (entry == null) {
+						final WorldChunk chunk = chunks.get(positions[i]);
+						if (chunk != null) {
+							final int y = ChunkSectionPos.unpackY(positions[i]);
+							if (!world.isOutOfHeightLimit(y << 4)) {
+								section = (PathingChunkSection) chunk.getSectionArray()[world.sectionCoordToIndex(y)];
+							}
+						}
+					} else {
+						section = entry.section;
+					}
+					if (modCounts[i] == -1) {
+						if (section != null) {
+							modCounts[i] = section.merlin_ai$getModCount();
 						}
 					}
-				} else {
-					section = entry.section;
-				}
-				if (modCounts[i] == -1) {
-					if (section != null) {
-						modCounts[i] = section.merlin_ai$getModCount();
+					if ((section == null && modCounts[i] > 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
+						if (section == null) {
+							modCounts[i] = 0;
+						} else {
+							modCounts[i] = section.merlin_ai$getModCount();
+						}
+						modPassing = false;
 					}
 				}
-				if ((section == null && modCounts[i] > 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
-					if (section == null) {
-						modCounts[i] = 0;
-					} else {
-						modCounts[i] = section.merlin_ai$getModCount();
-					}
-					modPassing = false;
+				if (!modPassing) {
+					final Object set = locationSetCache.get(type);
+					locationSetCache.clear();
+					enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSetImpl<T>) set);
+					return null;
 				}
-			}
-			if (!modPassing) {
 				final Object set = locationSetCache.get(type);
-				locationSetCache.clear();
-				enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSetImpl<T>) set);
-				return null;
+				if (set == MerlinAI.PLACEHOLDER_OBJECT) {
+					return null;
+				}
+				if (set == null) {
+					enqueueLocationSet(modCounts, type, null);
+				}
+				return (ValidLocationSet<T>) set;
 			}
 			final Object set = locationSetCache.get(type);
 			if (set == MerlinAI.PLACEHOLDER_OBJECT) {
 				return null;
 			}
 			if (set == null) {
-				enqueueLocationSet(oldModCounts, type, null);
+				enqueueLocationSet(modCounts, type, null);
 			}
 			return (ValidLocationSet<T>) set;
+		}
+
+		@Override
+		public @Nullable ChunkSectionRegions getRegions(final HierarchyInfo<?, ?, ?, ?> info, final long tick) {
+			if (lastTickAccessedRegions != tick) {
+				lastTickAccessedRegions = tick;
+				boolean modPassing = true;
+				final long[] modCounts = regionsModCounts;
+				final long[] positions = this.positions;
+				assert modCounts.length == positions.length;
+				final ValidLocationSetType<?> type = info.validLocationSetType();
+				for (int i = 0; i < modCounts.length; i++) {
+					final EntryImpl entry = entries.get(positions[i]);
+					if (entry != null) {
+						final ValidLocationSet<?> set = entry.getValidLocationSet(type, tick);
+						if (set != null && modCounts[i] != set.revision()) {
+							modCounts[i] = set.revision();
+							modPassing = false;
+						}
+					} else {
+						if (modCounts[i] != 0) {
+							modCounts[0] = 0;
+							modPassing = false;
+						}
+					}
+				}
+				if (!modPassing) {
+					regionsCache.clear();
+					enqueueRegions(info);
+					return null;
+				}
+			}
+			final Object set = regionsCache.get(info);
+			if (set == MerlinAI.PLACEHOLDER_OBJECT) {
+				return null;
+			}
+			if (set == null) {
+				enqueueRegions(info);
+			}
+			return set == null ? null : ((Pair<ChunkSectionRegions, ?>) set).getFirst();
+		}
+
+		private void enqueueRegions(final HierarchyInfo<?, ?, ?, ?> info) {
+			final BlockPos blockPos = pos.getMinPos();
+			final BlockPos minCachePos = blockPos.add(-16, -16, -16);
+			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
+			final long[] newOldModCounts = Arrays.copyOf(regionsModCounts, regionsModCounts.length);
+			final BooleanSupplier matcher = () -> Arrays.equals(newOldModCounts, regionsModCounts);
+			if (((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ChunkSectionRegionsAnalysisAITask<>(info, () -> ShapeCache.create(world, minCachePos, maxCachePos), matcher, pos, world, pair -> regionsCache.put(info, pair), () -> {
+				regionsCache.remove(info);
+			}))) {
+				regionsCache.put(info, MerlinAI.PLACEHOLDER_OBJECT);
+			}
+		}
+
+		@Override
+		public <N> ChunkSectionRegionConnectivityGraph<N> getGraph(final HierarchyInfo<?, N, ?, ?> info) {
+			return null;
 		}
 
 		private <T> void enqueueLocationSet(long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSetImpl<T> previous) {
@@ -179,8 +259,11 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
 				matcher = () -> Arrays.equals(newOldModCounts, modCounts);
 			}
-			((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> locationSetCache.put(type, locationSet)));
-			locationSetCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
+			if (((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> locationSetCache.put(type, locationSet), () -> {
+				locationSetCache.remove(type);
+			}))) {
+				locationSetCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
+			}
 		}
 
 		private long[] toColumnar(final long[] data) {

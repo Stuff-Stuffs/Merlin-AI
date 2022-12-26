@@ -16,4 +16,6 @@ public interface AITask {
 	 * Calling this function should flush changes to the world. Should only be called once done() is returns true. Guaranteed to be run on the main thread in serial.
 	 */
 	void runFinish();
+
+	void cancel();
 }

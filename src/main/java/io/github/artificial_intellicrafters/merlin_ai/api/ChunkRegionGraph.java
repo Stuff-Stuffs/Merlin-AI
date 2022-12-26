@@ -1,5 +1,8 @@
 package io.github.artificial_intellicrafters.merlin_ai.api;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -11,6 +14,10 @@ public interface ChunkRegionGraph {
 	@Nullable Entry getEntry(int x, int y, int z);
 
 	interface Entry {
-		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type);
+		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type, long tick);
+
+		@Nullable ChunkSectionRegions getRegions(HierarchyInfo<?, ?, ?, ?> info, long tick);
+
+		<N> ChunkSectionRegionConnectivityGraph<N> getGraph(HierarchyInfo<?, N, ?, ?> info);
 	}
 }

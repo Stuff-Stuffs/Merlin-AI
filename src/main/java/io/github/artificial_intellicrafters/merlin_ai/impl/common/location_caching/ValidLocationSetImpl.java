@@ -1,10 +1,10 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.util.UniverseInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
+import io.github.artificial_intellicrafters.merlin_ai.api.util.UniverseInfo;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
@@ -107,11 +107,13 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 				final int index = ValidLocationAnalysisChunkSectionAITTask.indexColumnar(j);
 				final long modCount = modCounts[index];
 				final PathingChunkSection section = region[index];
-				final long diff = section.merlin_ai$getModCount() - modCount;
-				if (diff > 0) {
-					final boolean b = section.merlin_ai$copy_updates(modCount, updatedBlockStates, 0, updatedPositions, 0);
-					assert b;
-					classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), 0, j, 0, rebuildConsumer, cache);
+				if (section != null) {
+					final long diff = section.merlin_ai$getModCount() - modCount;
+					if (diff > 0) {
+						final boolean b = section.merlin_ai$copy_updates(modCount, updatedBlockStates, 0, updatedPositions, 0);
+						assert b;
+						classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), 0, j, 0, rebuildConsumer, cache);
+					}
 				}
 			}
 		} else {
@@ -121,11 +123,13 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 						final int index = ValidLocationAnalysisChunkSectionAITTask.index(i, j, k);
 						final long modCount = modCounts[index];
 						final PathingChunkSection section = region[index];
-						final long diff = section.merlin_ai$getModCount() - modCount;
-						if (diff > 0) {
-							final boolean b = section.merlin_ai$copy_updates(modCount, updatedBlockStates, 0, updatedPositions, 0);
-							assert b;
-							classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), i, j, k, rebuildConsumer, cache);
+						if (section != null) {
+							final long diff = section.merlin_ai$getModCount() - modCount;
+							if (diff > 0) {
+								final boolean b = section.merlin_ai$copy_updates(modCount, updatedBlockStates, 0, updatedPositions, 0);
+								assert b;
+								classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), i, j, k, rebuildConsumer, cache);
+							}
 						}
 					}
 				}

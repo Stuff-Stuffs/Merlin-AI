@@ -7,15 +7,18 @@ import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 	private final PriorityQueue<WrappedTask> taskQueue;
+	private final ConcurrentLinkedDeque<WrappedTask> canceled;
 	private final int maxWaitingTasks;
 	private long order = 0;
 
 	public SingleThreadedAITaskExecutor(final int maxWaitingTasks) {
 		this.maxWaitingTasks = maxWaitingTasks;
 		taskQueue = new PriorityQueue<>(maxWaitingTasks);
+		canceled = new ConcurrentLinkedDeque<>();
 	}
 
 	@Override
@@ -25,14 +28,18 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 			return true;
 		}
 		if (!taskQueue.isEmpty() && taskQueue.peek().task.priority() > task.priority()) {
-			taskQueue.poll();
+			canceled.push(taskQueue.poll());
 			taskQueue.add(new WrappedTask(task, order++));
+			return true;
 		}
 		return false;
 	}
 
 	@Override
 	public void runTasks(final int maxMillis) {
+		while (!canceled.isEmpty()) {
+			canceled.remove().task.cancel();
+		}
 		final long startMillis = System.currentTimeMillis();
 		final List<WrappedTask> finished = new ArrayList<>();
 		while (System.currentTimeMillis() - startMillis <= maxMillis) {

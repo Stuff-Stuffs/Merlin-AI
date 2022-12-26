@@ -20,7 +20,7 @@ import net.minecraft.world.chunk.ChunkSection;
 import java.util.Arrays;
 
 public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
-	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(0, Integer.MAX_VALUE, 0));
+	private static final long DEFAULT_KEY = HashCommon.mix(BlockPos.asLong(0, 2049, 0));
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
 	private static final VoxelShape EMPTY = VoxelShapes.empty();
 	private final int cacheMask;
@@ -53,6 +53,9 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 
 	@Override
 	public PathingChunkSection getPathingChunk(final int x, final int y, final int z) {
+		if (world.isOutOfHeightLimit(y)) {
+			return null;
+		}
 		final Chunk chunk = getChunk(x >> 4, z >> 4);
 		if (chunk == null) {
 			return null;
@@ -83,7 +86,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		}
 		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
 		if (entry != null) {
-			final ValidLocationSet<T> set = entry.getValidLocationSet(type);
+			final ValidLocationSet<T> set = entry.getValidLocationSet(type, world.getTime());
 			if (set != null) {
 				locationKeys[pos] = idx;
 				locationSets[pos] = set;
@@ -102,7 +105,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		}
 		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
 		if (entry != null) {
-			final ValidLocationSet<?> set = entry.getValidLocationSet(type);
+			final ValidLocationSet<?> set = entry.getValidLocationSet(type, world.getTime());
 			if (set != null) {
 				locationKeys[pos] = idx;
 				locationSets[pos] = set;
