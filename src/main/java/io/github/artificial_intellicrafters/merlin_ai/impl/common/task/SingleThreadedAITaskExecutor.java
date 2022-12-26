@@ -24,7 +24,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 
 	@Override
 	public boolean submitTask(final AITask task) {
-		if (taskQueue.size() < maxWaitingTasks) {
+		if (taskQueue.size() < 10*maxWaitingTasks) {
 			taskQueue.add(new WrappedTask(task, order++));
 			return true;
 		}
@@ -50,12 +50,11 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				if (task == null) {
 					break;
 				}
-				if (task.attempts > MAX_ATTEMPTS) {
-					canceled.push(taskQueue.poll());
-				}
 				if (task.task.done()) {
 					taskQueue.poll();
 					finished.add(task);
+				} else if (task.attempts > MAX_ATTEMPTS) {
+					canceled.push(taskQueue.poll());
 				} else {
 					break;
 				}

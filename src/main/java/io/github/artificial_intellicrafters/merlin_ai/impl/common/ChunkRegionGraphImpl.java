@@ -229,9 +229,11 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			final BlockPos minCachePos = blockPos.add(-16, -16, -16);
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
 			final long[] newOldModCounts = Arrays.copyOf(regionsModCounts, regionsModCounts.length);
-			final BooleanSupplier matcher = () -> Arrays.equals(newOldModCounts, regionsModCounts);
+			final BooleanSupplier matcher = () -> compatible(newOldModCounts, regionsModCounts);
 			if (((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ChunkSectionRegionsAnalysisAITask<>(info, () -> ShapeCache.create(world, minCachePos, maxCachePos), matcher, pos, world, pair -> regionsCache.put(info, pair), () -> {
-				regionsCache.remove(info);
+				if (regionsCache.get(info) == MerlinAI.PLACEHOLDER_OBJECT) {
+					regionsCache.remove(info);
+				}
 			}))) {
 				regionsCache.put(info, MerlinAI.PLACEHOLDER_OBJECT);
 			}
@@ -251,19 +253,27 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			if (type.columnar()) {
 				newOldModCounts = toColumnar(modCounts);
 				oldModCounts = toColumnar(oldModCounts);
-				matcher = () ->
-						newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(-1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)] &&
-								newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(0)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)] &&
-								newOldModCounts[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(1)] == modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)];
+				matcher = () -> compatible(newOldModCounts, new long[]{modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)], modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)], modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)]});
 			} else {
 				newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
-				matcher = () -> Arrays.equals(newOldModCounts, modCounts);
+				matcher = () -> compatible(newOldModCounts, modCounts);
 			}
 			if (((AIWorld) world).merlin_ai$getTaskExecutor().submitTask(new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> locationSetCache.put(type, locationSet), () -> {
-				locationSetCache.remove(type);
+				if (locationSetCache.get(type) == MerlinAI.PLACEHOLDER_OBJECT) {
+					locationSetCache.remove(type);
+				}
 			}))) {
 				locationSetCache.put(type, MerlinAI.PLACEHOLDER_OBJECT);
 			}
+		}
+
+		private static boolean compatible(final long[] current, final long[] old) {
+			for (int i = 0; i < current.length; i++) {
+				if (current[i] != old[i] && current[i] != -1) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		private long[] toColumnar(final long[] data) {

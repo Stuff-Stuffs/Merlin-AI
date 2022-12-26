@@ -93,9 +93,9 @@ public final class LocationCacheTest {
 			}
 			final Vec3d d = context.camera().getPos();
 			if (LAST_REGIONS_POS != null && REMAINING_VISIBLE_REGION_TICKS > 0) {
-				for (int offX = -1; offX <= 1; offX++) {
-					for (int offY = -1; offY <= 1; offY++) {
-						for (int offZ = -1; offZ <= 1; offZ++) {
+				for (int offX = -0; offX < 1; offX++) {
+					for (int offY = -0; offY < 1; offY++) {
+						for (int offZ = -0; offZ < 1; offZ++) {
 							final ChunkRegionGraph.Entry entry1 = ((AIWorld) MinecraftClient.getInstance().world).merlin_ai$getChunkGraph().getEntry(LAST_REGIONS_POS.getMinX() + offX * 16, LAST_REGIONS_POS.getMinY() + offY * 16, LAST_REGIONS_POS.getMinZ() + offZ * 16);
 							final ChunkSectionRegions lastRegions = entry1 == null ? null : entry1.getRegions(HIERARCHY_INFO, context.world().getTime());
 							if (lastRegions != null) {
@@ -234,20 +234,20 @@ public final class LocationCacheTest {
 
 			@Override
 			public Pair<ChunkSectionRegions, Void> regionify(final ShapeCache shapeCache, final ChunkSectionPos pos, final ValidLocationSetType<BasicLocationType> type, final HeightLimitView limitView) {
-				boolean skip = false;
+				int missing = 0;
 				for (int i = -1; i <= 1; i++) {
 					for (int j = -1; j <= 1; j++) {
-						for (int k = -1; k <= 1; k++) {
-							if (!shapeCache.isOutOfHeightLimit(pos.getMinY() + j * 16)) {
+						if (!shapeCache.isOutOfHeightLimit(pos.getMinY() + j * 16)) {
+							for (int k = -1; k <= 1; k++) {
 								if (!shapeCache.doesLocationSetExist(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, type)) {
 									shapeCache.getLocationType(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, type);
-									skip = true;
+									missing++;
 								}
 							}
 						}
 					}
 				}
-				if (skip) {
+				if (missing != 0) {
 					return null;
 				}
 				int x = 0;
