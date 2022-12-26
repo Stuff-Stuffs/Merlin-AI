@@ -50,7 +50,10 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				if (task == null) {
 					break;
 				}
-				if (task.attempts > MAX_ATTEMPTS || task.task.done()) {
+				if (task.attempts > MAX_ATTEMPTS) {
+					canceled.push(taskQueue.poll());
+				}
+				if (task.task.done()) {
 					taskQueue.poll();
 					finished.add(task);
 				} else {
