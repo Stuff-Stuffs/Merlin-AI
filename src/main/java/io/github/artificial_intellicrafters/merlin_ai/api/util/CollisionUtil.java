@@ -25,7 +25,7 @@ public final class CollisionUtil {
 
 	public static boolean doesCollide(final Box box, final ShapeCache world) {
 		final CuboidBlockIterator blockIterator = collisionArea(box);
-		final VoxelShape boxShape = VoxelShapes.cuboid(box);
+		VoxelShape boxShape = null;
 		do {
 			final int x = blockIterator.getX();
 			final int y = blockIterator.getY();
@@ -44,7 +44,7 @@ public final class CollisionUtil {
 					if (box.intersects(x, y, z, x + 1, y + 1, z + 1)) {
 						return true;
 					}
-				} else if (VoxelShapes.matchesAnywhere(boxShape, voxelShape, BooleanBiFunction.AND)) {
+				} else if (VoxelShapes.matchesAnywhere((boxShape == null ? boxShape = VoxelShapes.cuboid(box) : boxShape), voxelShape, BooleanBiFunction.AND)) {
 					return true;
 				}
 			}

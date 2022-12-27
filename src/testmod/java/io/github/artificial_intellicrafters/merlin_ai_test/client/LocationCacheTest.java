@@ -47,8 +47,6 @@ import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
 
-import java.util.Optional;
-
 public final class LocationCacheTest {
 	public static final ValidLocationSetType<BasicLocationType> ONE_X_TWO_BASIC_LOCATION_SET_TYPE;
 	public static final NeighbourGetter<Entity, BasicAIPathNode> BASIC_NEIGHBOUR_GETTER;
@@ -57,6 +55,7 @@ public final class LocationCacheTest {
 	public static final KeyBind REGION_KEYBIND = new KeyBind("merlin_ai.region_test", GLFW.GLFW_KEY_F8, "misc");
 	private static AIPath<Entity, BasicAIPathNode> LAST_PATH = null;
 	private static int REMAINING_VISIBLE_TICKS = 0;
+	private static final Long2ObjectMap<BakeableDebugRenderers.Key> VISIBLE = new Long2ObjectOpenHashMap<>();
 	private static ChunkSectionPos LAST_REGIONS_POS = null;
 	private static int REMAINING_VISIBLE_REGION_TICKS = 0;
 
@@ -74,6 +73,7 @@ public final class LocationCacheTest {
 			if (REGION_KEYBIND.wasPressed()) {
 				final BlockPos pos = client.cameraEntity.getBlockPos();
 				LAST_REGIONS_POS = ChunkSectionPos.from(pos);
+				VISIBLE.clear();
 				REMAINING_VISIBLE_REGION_TICKS = 6000;
 			}
 		});
@@ -91,46 +91,55 @@ public final class LocationCacheTest {
 					LAST_PATH = null;
 				}
 			}
-			final Vec3d d = context.camera().getPos();
+		});
+		ClientTickEvents.END.register(client -> {
 			if (LAST_REGIONS_POS != null && REMAINING_VISIBLE_REGION_TICKS > 0) {
-				for (int offX = -2; offX <= 2; offX++) {
-					for (int offY = -2; offY <= 2; offY++) {
-						for (int offZ = -2; offZ <= 2; offZ++) {
-							final ChunkRegionGraph.Entry entry1 = ((AIWorld) MinecraftClient.getInstance().world).merlin_ai$getChunkGraph().getEntry(LAST_REGIONS_POS.getMinX() + offX * 16, LAST_REGIONS_POS.getMinY() + offY * 16, LAST_REGIONS_POS.getMinZ() + offZ * 16);
-							final ChunkSectionRegions lastRegions = entry1 == null ? null : entry1.getRegions(HIERARCHY_INFO, context.world().getTime());
-							if (lastRegions != null) {
-								final Long2ObjectMap<VoxelSet> sets = new Long2ObjectOpenHashMap<>();
-								for (int i = 0; i < 16; i++) {
-									for (int j = 0; j < 16; j++) {
-										for (int k = 0; k < 16; k++) {
-											final ChunkSectionRegion query = lastRegions.query(PathingChunkSection.packLocal(i, j, k));
-											if (query != null) {
-												sets.computeIfAbsent(query.id(), l -> new BitSetVoxelSet(16, 16, 16)).set(i, j, k);
+				for (int offX = -1; offX <= 1; offX++) {
+					for (int offY = -1; offY <= 1; offY++) {
+						for (int offZ = -1; offZ <= 1; offZ++) {
+							final ChunkSectionPos sectionPos = LAST_REGIONS_POS.add(offX, offY, offZ);
+							final ChunkRegionGraph.Entry e = ((AIWorld) MinecraftClient.getInstance().world).merlin_ai$getChunkGraph().getEntry(sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
+							final ChunkSectionRegions lastRegions = e == null ? null : e.getRegions(HIERARCHY_INFO, client.world.getTime());
+							final long chunkKey = sectionPos.asLong();
+							final boolean b = VISIBLE.containsKey(chunkKey);
+							if (lastRegions == null && b) {
+								VISIBLE.remove(chunkKey).delete();
+							} else if (lastRegions != null && !b) {
+								final Matrix4f matrix4f = new Matrix4f();
+								matrix4f.identity();
+								VISIBLE.put(chunkKey, BakeableDebugRenderers.render(consumers -> {
+									final Long2ObjectMap<VoxelSet> sets = new Long2ObjectOpenHashMap<>();
+									for (int i = 0; i < 16; i++) {
+										for (int j = 0; j < 16; j++) {
+											for (int k = 0; k < 16; k++) {
+												final ChunkSectionRegion query = lastRegions.query(PathingChunkSection.packLocal(i, j, k));
+												if (query != null) {
+													sets.computeIfAbsent(query.id(), l -> new BitSetVoxelSet(16, 16, 16)).set(i, j, k);
+												}
 											}
 										}
 									}
-								}
-								final VertexConsumer consumer = context.consumers().getBuffer(RenderLayer.LINES);
-								context.matrixStack().push();
-								context.matrixStack().translate(-d.x + LAST_REGIONS_POS.getMinX() + offX * 16, -d.y + LAST_REGIONS_POS.getMinY() + offY * 16, -d.z + LAST_REGIONS_POS.getMinZ() + offZ * 16);
-								final Matrix4f matrix = context.matrixStack().peek().getModel();
-								for (final Long2ObjectMap.Entry<VoxelSet> entry : sets.long2ObjectEntrySet()) {
-									final int color = (int) HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getLongKey() + LAST_REGIONS_POS.add(offX, offY, offZ).asLong())) | 0xFF00_0000;
-									entry.getValue().forEachEdge((i, j, k, l, m, n) -> {
-										final Vec3d start = new Vec3d(i, j, k);
-										final Vec3d end = new Vec3d(l, m, n);
-										consumer.m_rkxaaknb(matrix, (float) start.x, (float) start.y, (float) start.z).color(color).normal(0, 1, 0).next();
-										consumer.m_rkxaaknb(matrix, (float) end.x, (float) end.y, (float) end.z).color(color).normal(0, 1, 0).next();
-									}, true);
-								}
-								context.matrixStack().pop();
-
+									final VertexConsumer consumer = consumers.getBuffer(RenderLayer.LINES);
+									for (final Long2ObjectMap.Entry<VoxelSet> entry : sets.long2ObjectEntrySet()) {
+										final int color = (int) HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getLongKey() + sectionPos.asLong())) | 0xFF00_0000;
+										final int ox = sectionPos.getMinX();
+										final int oy = sectionPos.getMinY();
+										final int oz = sectionPos.getMinZ();
+										entry.getValue().forEachEdge((i, j, k, l, m, n) -> {
+											final Vec3d start = new Vec3d(i, j, k);
+											final Vec3d end = new Vec3d(l, m, n);
+											consumer.vertex((float) start.x + ox, (float) start.y + oy, (float) start.z + oz).color(color).normal(0, 1, 0).next();
+											consumer.vertex((float) end.x + ox, (float) end.y + oy, (float) end.z + oz).color(color).normal(0, 1, 0).next();
+										}, true);
+									}
+								}));
 							}
 						}
 					}
 				}
 				REMAINING_VISIBLE_REGION_TICKS--;
 				if (REMAINING_VISIBLE_REGION_TICKS == 0) {
+					VISIBLE.clear();
 					LAST_REGIONS_POS = null;
 				}
 			}
@@ -156,32 +165,7 @@ public final class LocationCacheTest {
 	static {
 		ValidLocationSetTypeRegistry.INSTANCE.register(BasicLocationType.UNIVERSE_INFO, new ValidLocationClassifier<>() {
 			private static final Box BOX = new Box(0, 0, 0, 1, 2, 1);
-			private static final Box FLOOR = new Box(0, -1, 0, 1, 0, 1);
-
-			@Override
-			public Optional<BasicLocationType> fill(final ChunkSectionPos pos, final ShapeCache cache) {
-				//final PathingChunkSection chunk = cache.getPathingChunk(pos.getMinX(), pos.getMinY(), pos.getMinZ());
-				//if (chunk != null) {
-				//	if (chunk.flagCount(MerlinAITest.FULL_BLOCK) == 16 * 16 * 16) {
-				//		return Optional.of(BasicLocationType.CLOSED);
-				//	} else if (chunk.flagCount(MerlinAITest.AIR_BLOCK) == 16 * 16 * 16) {
-				//		return Optional.of(BasicLocationType.OPEN);
-				//	}
-				//}
-				return Optional.empty();
-			}
-
-			@Override
-			public BasicLocationType postProcess(final BasicLocationType defaultVal, final int x, final int y, final int z, final ShapeCache cache) {
-				if (defaultVal == BasicLocationType.OPEN && y % 16 == 0) {
-					if (CollisionUtil.doesCollide(FLOOR.offset(x, y, z), cache)) {
-						return BasicLocationType.GROUND;
-					}
-					return BasicLocationType.OPEN;
-				} else {
-					return defaultVal;
-				}
-			}
+			private static final Box FLOOR = new Box(0, -0.001, 0, 1, 0, 1);
 
 			@Override
 			public BasicLocationType classify(final int x, final int y, final int z, final ShapeCache cache) {
@@ -196,7 +180,7 @@ public final class LocationCacheTest {
 
 			@Override
 			public void rebuild(final BlockState[] updateBlockStates, final short[] updatedPositions, final int updateCount, final int chunkSectionX, final int chunkSectionY, final int chunkSectionZ, final int offsetX, final int offsetY, final int offsetZ, final RebuildConsumer<BasicLocationType> consumer, final ShapeCache cache) {
-				if (offsetX != 0 || offsetZ != 0 || offsetY < 0) {
+				if (offsetX != 0 || offsetZ != 0) {
 					return;
 				}
 				for (int i = 0; i < updateCount; i++) {
@@ -207,14 +191,18 @@ public final class LocationCacheTest {
 					final int z = (chunkSectionZ + offsetZ) * ChunkSection.SECTION_WIDTH + PathingChunkSection.unpackLocalZ(updatePosition);
 					if (offsetY == 0) {
 						consumer.update(classify(x, y, z, cache), x, y, z);
-						if (unpackedYOffset < 15) {
+						if (unpackedYOffset != 15) {
 							consumer.update(classify(x, y + 1, z, cache), x, y + 1, z);
 						}
-						if (unpackedYOffset > 0) {
+						if (unpackedYOffset != 0) {
 							consumer.update(classify(x, y - 1, z, cache), x, y - 1, z);
 						}
-					} else if (unpackedYOffset == 0) {
-						consumer.update(classify(x, y - 1, z, cache), x, y - 1, z);
+					} else {
+						if (offsetY == -1 && unpackedYOffset == 15) {
+							consumer.update(classify(x, y + 1, z, cache), x, y + 1, z);
+						} else if (offsetY == 1 && unpackedYOffset == 0) {
+							consumer.update(classify(x, y - 1, z, cache), x, y - 1, z);
+						}
 					}
 				}
 			}

@@ -202,8 +202,8 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 							modPassing = false;
 						}
 					} else {
-						if (modCounts[i] != 0) {
-							modCounts[0] = 0;
+						if (modCounts[i] != -1) {
+							modCounts[0] = -1;
 							modPassing = false;
 						}
 					}
