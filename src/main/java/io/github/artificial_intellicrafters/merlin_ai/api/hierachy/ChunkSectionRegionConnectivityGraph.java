@@ -14,10 +14,14 @@ public interface ChunkSectionRegionConnectivityGraph<N> {
 	}
 
 	interface Builder<N, O extends OrablePredicate<N, O>> {
-		void addLink(long from, long to);
-
-		void addConditionalLink(long from, long to, O contextPredicate);
+		RegionBuilder<N, O> region(long region);
 
 		ChunkSectionRegionConnectivityGraph<N> build();
+	}
+
+	interface RegionBuilder<N, O extends OrablePredicate<N, O>> {
+		void addLink(long to);
+
+		void addConditionalLink(long to, O contextPredicate);
 	}
 }

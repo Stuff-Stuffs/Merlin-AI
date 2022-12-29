@@ -56,20 +56,52 @@ public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
 		throw new RuntimeException();
 	}
 
+	@Override
+	public long prefix() {
+		return prefix;
+	}
+
 	public static long packChunkSectionPosCompact(final ChunkSectionPos pos, final HeightLimitView view) {
 		final int yIndex = view.sectionCoordToIndex(pos.getSectionY());
 		if (yIndex > 255 || yIndex < 0) {
 			throw new RuntimeException();
 		}
-		return ((long) pos.getSectionX() & 0xFFFF_FFFFL) << X_SHIFT | ((long) yIndex) << Y_SHIFT | ((long) pos.getSectionZ() & 0xFFFF_FFFFL) << Z_SHIFT;
+		long x = pos.getSectionX();
+		if (x < 0) {
+			x = -x;
+			x |= 1 << (X_BITS - 1);
+		}
+		long z = pos.getSectionZ();
+		if (z < 0) {
+			z = -z;
+			z |= 1 << (Z_BITS - 1);
+		}
+		return x << X_SHIFT | ((long) yIndex & 255) << Y_SHIFT | z << Z_SHIFT;
 	}
 
 	public static ChunkSectionPos unpackChunkSectionPosCompact(final long packed, final HeightLimitView view) {
-		final int x = (int) ((packed & X_MASK) >>> X_SHIFT);
+		return ChunkSectionPos.from(unpackChunkSectionPosX(packed), unpackChunkSectionPosY(packed, view), unpackChunkSectionPosZ(packed));
+	}
+
+	public static int unpackChunkSectionPosX(final long packed) {
+		final int i = (int) ((packed & X_MASK) >>> X_SHIFT);
+		if ((i & (1 << (X_BITS - 1))) != 0) {
+			return -(i & ((1 << (Z_BITS - 1)) - 1));
+		}
+		return i;
+	}
+
+	public static int unpackChunkSectionPosY(final long packed, final HeightLimitView view) {
 		final int yIndex = (int) ((packed & Y_MASK) >>> Y_SHIFT);
-		final int z = (int) ((packed & Z_MASK) >>> Z_SHIFT);
-		final int y = view.sectionIndexToCoord(yIndex);
-		return ChunkSectionPos.from(x, y, z);
+		return view.sectionIndexToCoord(yIndex);
+	}
+
+	public static int unpackChunkSectionPosZ(final long packed) {
+		final int i = (int) ((packed & Z_MASK) >>> Z_SHIFT);
+		if ((i & (1 << (Z_BITS - 1))) != 0) {
+			return -(i & ((1 << (Z_BITS - 1)) - 1));
+		}
+		return i;
 	}
 
 	public static int unpackCustomPosCompact(final long packed) {

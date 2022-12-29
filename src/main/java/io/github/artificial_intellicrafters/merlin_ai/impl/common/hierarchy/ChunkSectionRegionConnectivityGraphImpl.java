@@ -4,6 +4,8 @@ import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionR
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.OrablePredicate;
 import it.unimi.dsi.fastutil.longs.*;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 
 public class ChunkSectionRegionConnectivityGraphImpl<N, T extends OrablePredicate<N, T>> implements ChunkSectionRegionConnectivityGraph<N> {
 	private static final long[] EMPTY = new long[0];
@@ -40,62 +42,64 @@ public class ChunkSectionRegionConnectivityGraphImpl<N, T extends OrablePredicat
 		return LongIterators.wrap(scratch, 0, length);
 	}
 
-	private record ConditionalLinks<T>(long[] links, Object[] conditions) {
-	}
-
-	private static final class PartialConditionalLinks<N, T extends OrablePredicate<N, T>> {
-		private final Long2ObjectMap<T> conditionalLinks = new Long2ObjectOpenHashMap<>();
+	private record ConditionalLinks<T>(long[] links, OrablePredicate<?, ?>[] conditions) {
 	}
 
 	public static final class BuilderImpl<N, T extends OrablePredicate<N, T>> implements Builder<N, T> {
-		private final ChunkSectionRegions regions;
-		private final Long2ObjectMap<LongSet> links = new Long2ObjectOpenHashMap<>();
-		private final Long2ObjectMap<PartialConditionalLinks<N, T>> conditionalLinks = new Long2ObjectOpenHashMap<>();
+		private final long prefix;
+		private final Short2ObjectMap<RegionBuilderImpl<N, T>> regions;
 
 		public BuilderImpl(final ChunkSectionRegions regions) {
-			this.regions = regions;
+			prefix = regions.prefix();
+			this.regions = new Short2ObjectOpenHashMap<>();
 		}
 
 		@Override
-		public void addLink(final long from, final long to) {
-			if (regions.byId(from) != null) {
-				links.computeIfAbsent(from, s -> new LongOpenHashSet(8)).add(to);
-			} else {
+		public RegionBuilder<N, T> region(final long region) {
+			if (region >>> 16 != prefix >>> 16) {
 				throw new RuntimeException();
 			}
-		}
-
-		@Override
-		public void addConditionalLink(final long from, final long to, final T contextPredicate) {
-			if (regions.byId(from) != null) {
-				final T old = conditionalLinks.computeIfAbsent(from, s -> new PartialConditionalLinks<>()).conditionalLinks.put(to, contextPredicate);
-				if (old != null) {
-					conditionalLinks.get(from).conditionalLinks.put(to, contextPredicate.or(old));
-				}
-			} else {
-				throw new RuntimeException();
-			}
+			final short key = (short) (region & 0xFFFFL);
+			return regions.computeIfAbsent(key, i -> new RegionBuilderImpl<>());
 		}
 
 		@Override
 		public ChunkSectionRegionConnectivityGraph<N> build() {
-			final Long2ObjectMap<long[]> links = new Long2ObjectOpenHashMap<>(this.links.size());
-			final Long2ObjectMap<ConditionalLinks<T>> conditionalLinks = new Long2ObjectOpenHashMap<>(this.conditionalLinks.size());
-			for (final Long2ObjectMap.Entry<LongSet> entry : this.links.long2ObjectEntrySet()) {
-				links.put(entry.getLongKey(), entry.getValue().toLongArray());
-			}
-			for (final Long2ObjectMap.Entry<PartialConditionalLinks<N, T>> entry : this.conditionalLinks.long2ObjectEntrySet()) {
+			final Long2ObjectMap<long[]> links = new Long2ObjectOpenHashMap<>(regions.size());
+			final Long2ObjectMap<ConditionalLinks<T>> conditionalLinks = new Long2ObjectOpenHashMap<>(regions.size());
+			for (final Short2ObjectMap.Entry<RegionBuilderImpl<N, T>> entry : regions.short2ObjectEntrySet()) {
+				final long key = (((int) entry.getShortKey()) & 0xFFFF) | prefix;
+				links.put(key, entry.getValue().links.toLongArray());
 				final int size = entry.getValue().conditionalLinks.size();
 				final long[] condLinks = new long[size];
-				final Object[] condPreds = new Object[size];
+				final OrablePredicate<?, ?>[] condPreds = new OrablePredicate[size];
 				int i = 0;
 				for (final Long2ObjectMap.Entry<T> en : entry.getValue().conditionalLinks.long2ObjectEntrySet()) {
 					condLinks[i] = en.getLongKey();
 					condPreds[i++] = en.getValue();
 				}
-				conditionalLinks.put(entry.getLongKey(), new ConditionalLinks<>(condLinks, condPreds));
+				conditionalLinks.put(key, new ConditionalLinks<>(condLinks, condPreds));
 			}
 			return new ChunkSectionRegionConnectivityGraphImpl<>(links, conditionalLinks);
+		}
+	}
+
+
+	private static final class RegionBuilderImpl<N, T extends OrablePredicate<N, T>> implements RegionBuilder<N, T> {
+		private final LongSet links = new LongOpenHashSet();
+		private final Long2ObjectMap<T> conditionalLinks = new Long2ObjectOpenHashMap<>();
+
+		@Override
+		public void addLink(final long to) {
+			links.add(to);
+		}
+
+		@Override
+		public void addConditionalLink(final long to, final T contextPredicate) {
+			final T current = conditionalLinks.put(to, contextPredicate);
+			if (current != null) {
+				conditionalLinks.put(to, current.or(contextPredicate));
+			}
 		}
 	}
 }

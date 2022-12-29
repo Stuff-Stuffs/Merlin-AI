@@ -15,5 +15,5 @@ public interface HierarchyInfo<T, N, C, O extends OrablePredicate<N, O>> {
 
 	Pair<ChunkSectionRegions, C> regionify(ShapeCache shapeCache, ChunkSectionPos pos, ValidLocationSetType<T> type, HeightLimitView limitView);
 
-	ChunkSectionRegionConnectivityGraph<N> link(C precomputed, ShapeCache shapeCache, ChunkSectionPos pos, ChunkSectionRegions regions, ValidLocationSet<T> locationSet);
+	ChunkSectionRegionConnectivityGraph<N> link(C precomputed, ShapeCache shapeCache, ChunkSectionPos pos, ChunkSectionRegions regions);
 }

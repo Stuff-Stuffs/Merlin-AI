@@ -10,6 +10,8 @@ public interface ChunkSectionRegions {
 
 	@Nullable ChunkSectionRegion byId(long id);
 
+	long prefix();
+
 	static Builder builder(final ChunkSectionPos pos, final HeightLimitView view) {
 		return new ChunkSectionRegionsImpl.BuilderImpl(pos, view);
 	}

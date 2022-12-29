@@ -1,5 +1,10 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
+import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
@@ -25,7 +30,23 @@ public interface ShapeCache extends BlockView {
 		return getLocationType(pos.getX(), pos.getY(), pos.getZ(), validLocationSetType);
 	}
 
-	<T> T getLocationType(int x, int y, int z, ValidLocationSetType<T> validLocationSetType);
+	<T> @Nullable ValidLocationSet<T> getLocationSetType(int x, int y, int z, ValidLocationSetType<T> validLocationSetType);
+
+	ChunkSectionRegions getRegions(int x, int y, int z, HierarchyInfo<?, ?, ?, ?> info);
+
+	<N> ChunkSectionRegionConnectivityGraph<N> getGraph(int x, int y, int z, HierarchyInfo<?, N, ?, ?> info);
+
+	@Nullable ChunkSectionRegion getRegion(long key, HierarchyInfo<?, ?, ?, ?> info);
+
+	default <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType) {
+		final ValidLocationSet<T> set = getLocationSetType(x, y, z, validLocationSetType);
+		if (set != null) {
+			return set.get(x, y, z);
+		} else {
+			return validLocationSetType.universeInfo().getDefaultValue();
+		}
+	}
+
 
 	boolean doesLocationSetExist(int x, int y, int z, ValidLocationSetType<?> type);
 

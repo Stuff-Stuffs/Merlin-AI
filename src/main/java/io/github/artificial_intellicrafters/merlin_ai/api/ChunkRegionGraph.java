@@ -18,6 +18,6 @@ public interface ChunkRegionGraph {
 
 		@Nullable ChunkSectionRegions getRegions(HierarchyInfo<?, ?, ?, ?> info, long tick);
 
-		<N> ChunkSectionRegionConnectivityGraph<N> getGraph(HierarchyInfo<?, N, ?, ?> info);
+		<N> ChunkSectionRegionConnectivityGraph<N> getGraph(HierarchyInfo<?, N, ?, ?> info, long tick);
 	}
 }
