@@ -24,7 +24,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 
 	@Override
 	public boolean submitTask(final AITask task) {
-		if (taskQueue.size() < 10*maxWaitingTasks) {
+		if (taskQueue.size() < maxWaitingTasks) {
 			taskQueue.add(new WrappedTask(task, order++));
 			return true;
 		}
