@@ -4,6 +4,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionR
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITask;
+import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.OrablePredicate;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -23,6 +24,7 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 	private final ChunkSectionPos pos;
 	private final Consumer<ChunkSectionRegionConnectivityGraph<N>> completionConsumer;
 	private final Runnable cancel;
+	private AITaskExecutionContext context;
 	private ChunkSectionRegionConnectivityGraph<N> output = null;
 	private boolean finished = false;
 
@@ -37,18 +39,20 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 		this.cancel = cancel;
 	}
 
-	@Override
-	public int priority() {
-		return 3;
+	public void setContext(AITaskExecutionContext context) {
+		this.context = context;
 	}
 
 	@Override
 	public boolean done() {
-		return !shouldContinue.getAsBoolean() || output != null;
+		return !shouldContinue.getAsBoolean() || output != null || !context.valid();
 	}
 
 	@Override
 	public void runIteration() {
+		if(context==null) {
+			throw new RuntimeException();
+		}
 		if (shouldContinue.getAsBoolean()) {
 			final @Nullable Optional<C> optional = precomputed.get();
 			final ChunkSectionRegions regions = this.regions.get();
@@ -69,7 +73,7 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 				if (missing != 0) {
 					return;
 				}
-				output = info.link(optional.orElse(null), shapeCache, pos, regions);
+				output = info.link(optional.orElse(null), shapeCache, pos, regions, context);
 			}
 		}
 	}

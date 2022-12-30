@@ -12,6 +12,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetTypeRegistry;
 import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
+import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.OrablePredicate;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
@@ -76,27 +77,27 @@ public final class LocationCacheTest {
 				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
 				LAST_PATH = pather.calculatePath(PathTarget.yLevel(-64), 256, true, client.cameraEntity);
 				if (LAST_PATH != null) {
-					REMAINING_VISIBLE_TICKS = 6000;
+					REMAINING_VISIBLE_TICKS = 600;
 				}
 			}
 			if (REGION_KEYBIND.wasPressed()) {
 				final BlockPos pos = client.cameraEntity.getBlockPos();
 				LAST_REGIONS_POS = ChunkSectionPos.from(pos);
 				VISIBLE.clear();
-				REMAINING_VISIBLE_REGION_TICKS = 6000;
+				REMAINING_VISIBLE_REGION_TICKS = 600;
 			}
 			if (LINK_KEYBIND.isPressed()) {
 				final ChunkSectionPos sectionPos = ChunkSectionPos.from(client.cameraEntity.getBlockPos());
 				final short local = ChunkSectionPos.packLocal(client.cameraEntity.getBlockPos());
 				final ChunkRegionGraph.Entry entry = ((AIWorld) client.world).merlin_ai$getChunkGraph().getEntry(sectionPos);
 				if (entry != null) {
-					final ChunkSectionRegions regions = entry.getRegions(HIERARCHY_INFO, client.world.getTime());
+					final ChunkSectionRegions regions = entry.getRegions(HIERARCHY_INFO, client.world.getTime(), null);
 					if (regions != null) {
 						final ChunkSectionRegion region = regions.query(local);
 						if (region != null) {
 							LAST_SECTION = OptionalLong.of(region.id());
 							LAST_SECTION_POS = sectionPos;
-							REMAINING_VISIBLE_LINK_TICKS = 600;
+							REMAINING_VISIBLE_LINK_TICKS = 6000;
 						}
 					}
 				}
@@ -118,9 +119,9 @@ public final class LocationCacheTest {
 			}
 			if (REMAINING_VISIBLE_LINK_TICKS > 0) {
 				REMAINING_VISIBLE_LINK_TICKS--;
-				if (REMAINING_VISIBLE_LINK_TICKS % 64 < 32 && LAST_SECTION.isPresent() && LAST_SECTION_POS != null) {
+				if (LAST_SECTION.isPresent() && LAST_SECTION_POS != null) {
 					final BlockPos minPos = LAST_SECTION_POS.getMinPos();
-					final ShapeCache cache = ShapeCache.create(context.world(), minPos.add(-16, -16, -16), minPos.add(16, 16, 16));
+					final ShapeCache cache = ShapeCache.create(context.world(), minPos.add(-16, -16, -16), minPos.add(16, 16, 16), null);
 					final ChunkSectionRegionConnectivityGraph<Void> graph = cache.getGraph(minPos.getX(), minPos.getY(), minPos.getZ(), HIERARCHY_INFO);
 					if (graph != null) {
 						final LongIterator iterator = graph.unconditionalLinks(LAST_SECTION.getAsLong());
@@ -171,7 +172,7 @@ public final class LocationCacheTest {
 						for (int offZ = -1; offZ <= 1; offZ++) {
 							final ChunkSectionPos sectionPos = LAST_REGIONS_POS.add(offX, offY, offZ);
 							final ChunkRegionGraph.Entry e = ((AIWorld) client.world).merlin_ai$getChunkGraph().getEntry(sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
-							final ChunkSectionRegions lastRegions = e == null ? null : e.getRegions(HIERARCHY_INFO, client.world.getTime());
+							final ChunkSectionRegions lastRegions = e == null ? null : e.getRegions(HIERARCHY_INFO, client.world.getTime(), null);
 							final long chunkKey = sectionPos.asLong();
 							final boolean b = VISIBLE.containsKey(chunkKey);
 							if (lastRegions == null && b) {
@@ -244,7 +245,7 @@ public final class LocationCacheTest {
 			private static final Box FLOOR = new Box(0, -0.001, 0, 1, 0, 1);
 
 			@Override
-			public BasicLocationType classify(final int x, final int y, final int z, final ShapeCache cache) {
+			public BasicLocationType classify(final int x, final int y, final int z, final ShapeCache cache, final AITaskExecutionContext executionContext) {
 				if (CollisionUtil.doesCollide(BOX.offset(x, y, z), cache)) {
 					return BasicLocationType.CLOSED;
 				}
@@ -255,7 +256,7 @@ public final class LocationCacheTest {
 			}
 
 			@Override
-			public void rebuild(final BlockState[] updateBlockStates, final short[] updatedPositions, final int updateCount, final int chunkSectionX, final int chunkSectionY, final int chunkSectionZ, final int offsetX, final int offsetY, final int offsetZ, final RebuildConsumer<BasicLocationType> consumer, final ShapeCache cache) {
+			public void rebuild(final BlockState[] updateBlockStates, final short[] updatedPositions, final int updateCount, final int chunkSectionX, final int chunkSectionY, final int chunkSectionZ, final int offsetX, final int offsetY, final int offsetZ, final RebuildConsumer<BasicLocationType> consumer, final ShapeCache cache, final AITaskExecutionContext executionContext) {
 				if (offsetX != 0 || offsetZ != 0) {
 					return;
 				}
@@ -266,18 +267,18 @@ public final class LocationCacheTest {
 					final int y = (chunkSectionY + offsetY) * ChunkSection.SECTION_WIDTH + unpackedYOffset;
 					final int z = (chunkSectionZ + offsetZ) * ChunkSection.SECTION_WIDTH + PathingChunkSection.unpackLocalZ(updatePosition);
 					if (offsetY == 0) {
-						consumer.update(classify(x, y, z, cache), x, y, z);
+						consumer.update(classify(x, y, z, cache, executionContext), x, y, z);
 						if (unpackedYOffset != 15) {
-							consumer.update(classify(x, y + 1, z, cache), x, y + 1, z);
+							consumer.update(classify(x, y + 1, z, cache, executionContext), x, y + 1, z);
 						}
 						if (unpackedYOffset != 0) {
-							consumer.update(classify(x, y - 1, z, cache), x, y - 1, z);
+							consumer.update(classify(x, y - 1, z, cache, executionContext), x, y - 1, z);
 						}
 					} else {
 						if (offsetY == -1 && unpackedYOffset == 15) {
-							consumer.update(classify(x, y + 1, z, cache), x, y + 1, z);
+							consumer.update(classify(x, y + 1, z, cache, executionContext), x, y + 1, z);
 						} else if (offsetY == 1 && unpackedYOffset == 0) {
-							consumer.update(classify(x, y - 1, z, cache), x, y - 1, z);
+							consumer.update(classify(x, y - 1, z, cache, executionContext), x, y - 1, z);
 						}
 					}
 				}
@@ -297,7 +298,7 @@ public final class LocationCacheTest {
 			}
 
 			@Override
-			public Pair<ChunkSectionRegions, CacheData> regionify(final ShapeCache shapeCache, final ChunkSectionPos pos, final ValidLocationSetType<BasicLocationType> type, final HeightLimitView limitView) {
+			public Pair<ChunkSectionRegions, CacheData> regionify(final ShapeCache shapeCache, final ChunkSectionPos pos, final ValidLocationSetType<BasicLocationType> type, final HeightLimitView limitView, AITaskExecutionContext executionContext) {
 				int missing = 0;
 				for (int i = -1; i <= 1; i++) {
 					for (int j = -1; j <= 1; j++) {
@@ -331,49 +332,45 @@ public final class LocationCacheTest {
 			private void check(final int x, final int y, final int z, final int sX, final int sY, final int sZ, final int offY, final ShapeCache cache, final ChunkSectionRegions.RegionKey key, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ShortPriorityQueue queue, final LongSet outgoing, final boolean expand) {
 				final int height = y + sY + offY;
 				final boolean limit = cache.isOutOfHeightLimit(height);
+				short i = PathingChunkSection.packLocal(x + 1, y + offY, z);
 				if (x != 15) {
-					final short i = PathingChunkSection.packLocal(x + 1, y + offY, z);
 					if (expand && !builder.contains(i) && cache.getLocationType(x + 1 + sX, height, z + sZ, type) == BasicLocationType.GROUND) {
 						queue.enqueue(i);
 						builder.expand(key, i);
 					}
-				} else {
-					if (!limit) {
-						outgoing.add(BlockPos.asLong(x + sX+1, height, z + sZ));
-					}
 				}
+				if (!limit && !builder.contains(i)) {
+					outgoing.add(BlockPos.asLong(x + sX + 1, height, z + sZ));
+				}
+				i = PathingChunkSection.packLocal(x - 1, y + offY, z);
 				if (x != 0) {
-					final short i = PathingChunkSection.packLocal(x - 1, y + offY, z);
 					if (expand && !builder.contains(i) && cache.getLocationType(x - 1 + sX, height, z + sZ, type) == BasicLocationType.GROUND) {
 						queue.enqueue(i);
 						builder.expand(key, i);
 					}
-				} else {
-					if (!limit) {
-						outgoing.add(BlockPos.asLong(x + sX-1, height, z + sZ));
-					}
 				}
+				if (!limit && !builder.contains(i)) {
+					outgoing.add(BlockPos.asLong(x + sX - 1, height, z + sZ));
+				}
+				i = PathingChunkSection.packLocal(x, y + offY, z + 1);
 				if (z != 15) {
-					final short i = PathingChunkSection.packLocal(x, y + offY, z + 1);
 					if (expand && !builder.contains(i) && cache.getLocationType(x + sX, height, z + 1 + sZ, type) == BasicLocationType.GROUND) {
 						queue.enqueue(i);
 						builder.expand(key, i);
 					}
-				} else {
-					if (!limit) {
-						outgoing.add(BlockPos.asLong(x + sX, height, z + sZ+1));
-					}
 				}
+				if (!limit && !builder.contains(i)) {
+					outgoing.add(BlockPos.asLong(x + sX, height, z + sZ + 1));
+				}
+				i = PathingChunkSection.packLocal(x, y + offY, z - 1);
 				if (z != 0) {
-					final short i = PathingChunkSection.packLocal(x, y + offY, z - 1);
 					if (expand && !builder.contains(i) && cache.getLocationType(x + sX, height, z - 1 + sZ, type) == BasicLocationType.GROUND) {
 						queue.enqueue(i);
 						builder.expand(key, i);
 					}
-				} else {
-					if (!limit) {
-						outgoing.add(BlockPos.asLong(x + sX, height, z + sZ-1));
-					}
+				}
+				if (!limit && !builder.contains(i)) {
+					outgoing.add(BlockPos.asLong(x + sX, height, z + sZ - 1));
 				}
 			}
 
@@ -403,7 +400,7 @@ public final class LocationCacheTest {
 			}
 
 			@Override
-			public ChunkSectionRegionConnectivityGraph<Void> link(final CacheData precomputed, final ShapeCache shapeCache, final ChunkSectionPos pos, final ChunkSectionRegions regions) {
+			public ChunkSectionRegionConnectivityGraph<Void> link(final CacheData precomputed, final ShapeCache shapeCache, final ChunkSectionPos pos, final ChunkSectionRegions regions, AITaskExecutionContext executionContext) {
 				final ChunkSectionRegionConnectivityGraph.Builder<Void, Tmp> builder = ChunkSectionRegionConnectivityGraph.builder(HIERARCHY_INFO, regions);
 				for (final Short2ObjectMap.Entry<LongSet> entry : precomputed.data.short2ObjectEntrySet()) {
 					final ChunkSectionRegion region = regions.query(entry.getShortKey());
@@ -413,13 +410,30 @@ public final class LocationCacheTest {
 						while (iterator.hasNext()) {
 							final long packed = iterator.nextLong();
 							final int x = BlockPos.unpackLongX(packed);
-							final int y = BlockPos.unpackLongY(packed);
+							int y = BlockPos.unpackLongY(packed);
 							final int z = BlockPos.unpackLongZ(packed);
-							final ChunkSectionRegions chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO);
+							ChunkSectionRegions chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO);
+							boolean accepted = false;
 							if (chunk != null) {
 								final ChunkSectionRegion query = chunk.query(PathingChunkSection.packLocal(x, y, z));
 								if (query != null && query.id() != region.id()) {
 									regionBuilder.addLink(query.id());
+									accepted = true;
+								}
+							}
+							if (accepted) {
+								continue;
+							}
+							while (!shapeCache.isOutOfHeightLimit(y) && shapeCache.getLocationType(x, y, z, ONE_X_TWO_BASIC_LOCATION_SET_TYPE) == BasicLocationType.OPEN) {
+								y--;
+							}
+							if (!shapeCache.isOutOfHeightLimit(y) && shapeCache.getLocationType(x, y, z, ONE_X_TWO_BASIC_LOCATION_SET_TYPE) == BasicLocationType.GROUND) {
+								chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO);
+								if (chunk != null) {
+									final ChunkSectionRegion query = chunk.query(PathingChunkSection.packLocal(x, y, z));
+									if (query != null && query.id() != region.id()) {
+										regionBuilder.addLink(query.id());
+									}
 								}
 							}
 						}

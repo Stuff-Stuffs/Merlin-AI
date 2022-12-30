@@ -3,6 +3,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.location_cach
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.UniverseInfo;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
@@ -21,7 +22,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 	private final long revision;
 	private final ValidLocationSetType<T> type;
 
-	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType) {
+	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetType<T> setType, final AITaskExecutionContext executionContext) {
 		revision = 0;
 		final ValidLocationClassifier<T> classifier = setType.classifier();
 		universeInfo = setType.universeInfo();
@@ -47,7 +48,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 16; y++) {
 				for (int z = 0; z < 16; z++) {
-					final T val = classifier.classify(baseX + x, baseY + y, baseZ + z, cache);
+					final T val = classifier.classify(baseX + x, baseY + y, baseZ + z, cache, executionContext);
 					final int index = byteIndex(x & 15, y & 15, z & 15);
 					final int subIndex = subIndex(x & 15, y & 15, z & 15);
 					long datum = data[index];
@@ -59,7 +60,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 		type = setType;
 	}
 
-	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetImpl<T> previous, final PathingChunkSection[] region, final long[] modCounts) {
+	public ValidLocationSetImpl(final ChunkSectionPos sectionPos, final ShapeCache cache, final ValidLocationSetImpl<T> previous, final PathingChunkSection[] region, final long[] modCounts, final AITaskExecutionContext executionContext) {
 		mask = previous.mask;
 		bitCount = previous.bitCount;
 		if (bitCount > 64) {
@@ -94,7 +95,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 					if (diff > 0) {
 						final boolean b = section.merlin_ai$copy_updates(modCount, updatedBlockStates, 0, updatedPositions, 0);
 						assert b;
-						classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), 0, j, 0, rebuildConsumer, cache);
+						classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), 0, j, 0, rebuildConsumer, cache, executionContext);
 					}
 				}
 			}
@@ -110,7 +111,7 @@ public final class ValidLocationSetImpl<T> implements ValidLocationSet<T> {
 							if (diff > 0) {
 								final boolean b = section.merlin_ai$copy_updates(modCount, updatedBlockStates, 0, updatedPositions, 0);
 								assert b;
-								classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), i, j, k, rebuildConsumer, cache);
+								classifier.rebuild(updatedBlockStates, updatedPositions, (int) diff, sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ(), i, j, k, rebuildConsumer, cache, executionContext);
 							}
 						}
 					}

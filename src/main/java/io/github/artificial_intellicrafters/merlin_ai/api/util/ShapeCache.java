@@ -6,6 +6,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionR
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
+import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
@@ -76,11 +77,11 @@ public interface ShapeCache extends BlockView {
 		return Math.max(Math.min(cacheSizeTarget, maxCacheSize), minCacheSize);
 	}
 
-	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos) {
-		return create(world, minPos, maxPos, computeCacheSize(minPos, maxPos));
+	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, @Nullable final AITaskExecutionContext context) {
+		return create(world, minPos, maxPos, computeCacheSize(minPos, maxPos), context);
 	}
 
-	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
+	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize, @Nullable final AITaskExecutionContext context) {
 		if (minPos.compareTo(maxPos) >= 0) {
 			throw new IllegalArgumentException("Argument minPos must be less than maxPos!");
 		}
@@ -88,6 +89,6 @@ public interface ShapeCache extends BlockView {
 		if ((cacheSize & (cacheSize - 1)) != 0) {
 			throw new IllegalArgumentException("Cache size must be a power of 2!");
 		}
-		return new ShapeCacheImpl(world, minPos, maxPos, cacheSize);
+		return new ShapeCacheImpl(world, minPos, maxPos, cacheSize, context);
 	}
 }

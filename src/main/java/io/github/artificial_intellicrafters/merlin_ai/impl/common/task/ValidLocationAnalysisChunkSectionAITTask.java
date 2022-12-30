@@ -3,6 +3,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.task;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITask;
+import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
@@ -24,6 +25,7 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 	private final Supplier<ShapeCache> cacheFactory;
 	private final Consumer<ValidLocationSet<T>> completionConsumer;
 	private final Runnable cancel;
+	private AITaskExecutionContext context;
 	private ValidLocationSetImpl<T> output = null;
 	private boolean finished = false;
 
@@ -38,14 +40,21 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 		this.cancel = cancel;
 	}
 
+	public void setContext(AITaskExecutionContext context) {
+		this.context = context;
+	}
+
 	@Override
 	public boolean done() {
 		//done or chunk has changed since task submission
-		return output != null || !shouldContinue.getAsBoolean();
+		return output != null || !shouldContinue.getAsBoolean() || !context.valid();
 	}
 
 	@Override
 	public void runIteration() {
+		if (context == null) {
+			throw new NullPointerException();
+		}
 		if (type.columnar()) {
 			runIterationColumnar();
 		} else {
@@ -92,12 +101,12 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 					}
 				}
 				if (recoverable) {
-					output = new ValidLocationSetImpl<>(pos, cache, previous, region, currentModCounts);
+					output = new ValidLocationSetImpl<>(pos, cache, previous, region, currentModCounts, context);
 				} else {
-					output = new ValidLocationSetImpl<>(pos, cache, type);
+					output = new ValidLocationSetImpl<>(pos, cache, type, context);
 				}
 			} else {
-				output = new ValidLocationSetImpl<>(pos, cache, type);
+				output = new ValidLocationSetImpl<>(pos, cache, type, context);
 			}
 		}
 	}
@@ -137,12 +146,12 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 					}
 				}
 				if (recoverable) {
-					output = new ValidLocationSetImpl<>(pos, cache, previous, region, currentModCounts);
+					output = new ValidLocationSetImpl<>(pos, cache, previous, region, currentModCounts, context);
 				} else {
-					output = new ValidLocationSetImpl<>(pos, cache, type);
+					output = new ValidLocationSetImpl<>(pos, cache, type, context);
 				}
 			} else {
-				output = new ValidLocationSetImpl<>(pos, cache, type);
+				output = new ValidLocationSetImpl<>(pos, cache, type, context);
 			}
 		}
 	}

@@ -45,7 +45,7 @@ public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
 
 	@Override
 	public @Nullable ChunkSectionRegion byId(final long id) {
-		if ((id & ~CUSTOM_SHIFT) == prefix) {
+		if ((id & ~CUSTOM_MASK) == prefix) {
 			final int i = unpackCustomPosCompact(id);
 			if (i < regions.length) {
 				return regions[i];
@@ -109,7 +109,7 @@ public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
 	}
 
 	public static final class BuilderImpl implements Builder {
-		private static final int SIZE_THRESHOLD = 10;
+		private static final int SIZE_THRESHOLD = 2;
 		private final ShortSet set = new ShortOpenHashSet();
 		private final List<PartialRegion> partialRegions = new ArrayList<>(32);
 		private final long pos;

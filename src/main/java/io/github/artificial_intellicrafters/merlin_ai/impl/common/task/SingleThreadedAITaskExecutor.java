@@ -1,108 +1,235 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.task;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITask;
+import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutor;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.MerlinAI;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 	private static final int MAX_ATTEMPTS = 64;
-	private final PriorityQueue<WrappedTask> taskQueue;
-	private final ConcurrentLinkedDeque<WrappedTask> canceled;
 	private final int maxWaitingTasks;
-	private long order = 0;
+	private final TaskQueue queue = new TaskQueue();
 
-	public SingleThreadedAITaskExecutor(final int maxWaitingTasks) {
-		this.maxWaitingTasks = maxWaitingTasks;
-		taskQueue = new PriorityQueue<>(maxWaitingTasks);
-		canceled = new ConcurrentLinkedDeque<>();
+	public SingleThreadedAITaskExecutor(final int tasks) {
+		maxWaitingTasks = tasks;
 	}
 
 	@Override
-	public boolean submitTask(final AITask task) {
-		if (taskQueue.size() < maxWaitingTasks) {
-			taskQueue.add(new WrappedTask(task, order++));
-			return true;
+	public Optional<AITaskExecutionContext> submitTask(final AITask task) {
+		if (queue.length < maxWaitingTasks) {
+			return Optional.of(new AITaskExecutionContextImpl(queue.push(task)));
 		}
-		if (!taskQueue.isEmpty() && taskQueue.peek().task.priority() > task.priority()) {
-			canceled.push(taskQueue.poll());
-			taskQueue.add(new WrappedTask(task, order++));
-			return true;
+		return Optional.empty();
+	}
+
+	@Override
+	public Optional<AITaskExecutionContext> submitTaskBefore(final AITask task, final AITaskExecutionContext executionContext) {
+		if (executionContext.valid()) {
+			final AITaskExecutionContextImpl impl = (AITaskExecutionContextImpl) executionContext;
+			if (queue.length + 1 >= maxWaitingTasks) {
+				final Node node = queue.popEnd();
+				node.task.cancel();
+				if (MerlinAI.DEBUG) {
+					System.out.println("Canceled task " + node.task + ", took " + node.duration + "ms");
+				}
+			}
+			return Optional.of(new AITaskExecutionContextImpl(queue.insertBefore(task, impl.node)));
 		}
-		return false;
+		return Optional.empty();
+	}
+
+	@Override
+	public Optional<AITaskExecutionContext> submitTaskAfter(final AITask task, final AITaskExecutionContext executionContext) {
+		if (executionContext.valid()) {
+			final AITaskExecutionContextImpl impl = (AITaskExecutionContextImpl) executionContext;
+			if (queue.length + 1 >= maxWaitingTasks) {
+				return Optional.empty();
+			}
+			return Optional.of(new AITaskExecutionContextImpl(queue.insertAfter(task, impl.node)));
+		}
+		return Optional.empty();
 	}
 
 	@Override
 	public void runTasks(final int maxMillis) {
-		while (!canceled.isEmpty()) {
-			canceled.remove().task.cancel();
-		}
-		final long startMillis = System.currentTimeMillis();
-		final List<WrappedTask> finished = new ArrayList<>();
-		while (System.currentTimeMillis() - startMillis <= maxMillis) {
-			WrappedTask task;
-			while (true) {
-				task = taskQueue.peek();
-				if (task == null) {
-					break;
-				}
-				if (task.task.done()) {
-					taskQueue.poll();
-					finished.add(task);
-				} else if (task.attempts > MAX_ATTEMPTS) {
-					canceled.push(taskQueue.poll());
-				} else {
-					break;
-				}
-			}
-			if (task != null) {
-				if (MerlinAI.DEBUG) {
-					final long preMillis = System.currentTimeMillis();
-					task.task.runIteration();
-					task.attempts++;
-					task.duration += System.currentTimeMillis() - preMillis;
-				} else {
-					task.task.runIteration();
-				}
+		final List<Node> finished = new ArrayList<>();
+		final List<Node> canceled = new ArrayList<>();
+		while (queue.length > 0) {
+			final AITask task = queue.head.task;
+			if (task.done()) {
+				finished.add(queue.pop());
 			} else {
-				break;
+				if (queue.head.attempts > MAX_ATTEMPTS) {
+					canceled.add(queue.pop());
+				} else {
+					if (MerlinAI.DEBUG) {
+						final long preMillis = System.currentTimeMillis();
+						task.runIteration();
+						queue.head.duration += System.currentTimeMillis() - preMillis;
+					} else {
+						task.runIteration();
+					}
+					queue.head.attempts++;
+					if (task.done()) {
+						finished.add(queue.pop());
+					}
+				}
 			}
 		}
-		for (final WrappedTask task : finished) {
+		for (final Node task : finished) {
 			task.task.runFinish();
 			if (MerlinAI.DEBUG) {
-				System.out.println("Finished task " + task + ", took " + task.duration + "ms");
+				System.out.println("Finished task " + task.task + ", took " + task.duration + "ms");
+			}
+		}
+		for (final Node task : canceled) {
+			task.task.cancel();
+			if (MerlinAI.DEBUG) {
+				System.out.println("Canceled task " + task.task + ", took " + task.duration + "ms");
 			}
 		}
 	}
 
-	private static final class WrappedTask implements Comparable<WrappedTask> {
-		private final AITask task;
-		private final long order;
-		private long duration = 0;
-		private int attempts = 0;
+	private static final class AITaskExecutionContextImpl implements AITaskExecutionContext {
+		private final Node node;
 
-		private WrappedTask(final AITask task, final long order) {
-			this.task = task;
-			this.order = order;
+		private AITaskExecutionContextImpl(final Node node) {
+			this.node = node;
 		}
 
 		@Override
-		public int compareTo(final WrappedTask o) {
-			final int i = Integer.compare(task.priority(), o.task.priority());
-			if (i != 0) {
-				return i;
+		public boolean valid() {
+			return !node.invalidated;
+		}
+	}
+
+	private static final class TaskQueue {
+		private final Object parentKey = new Object();
+		private int length;
+		private Node head;
+		private Node tail;
+
+		public Node popEnd() {
+			if (length == 0) {
+				throw new NoSuchElementException();
 			}
-			return Long.compare(order, o.order);
+			if(head==tail) {
+				Node h = head;
+				h.invalidated = true;
+				head = tail = null;
+				length--;
+				return h;
+			}
+			final Node t = tail;
+			tail = tail.before;
+			if (tail != null) {
+				tail.after = null;
+			}
+			t.invalidated = true;
+			length--;
+			return t;
 		}
 
-		@Override
-		public String toString() {
-			return "WrappedTask[" + "task=" + task + ", " + "order=" + order + ']';
+		public Node pop() {
+			if (length == 0) {
+				throw new NoSuchElementException();
+			}
+			if(head==tail) {
+				Node h = head;
+				h.invalidated = true;
+				head = tail = null;
+				length--;
+				return h;
+			}
+			final Node h = head;
+			head = h.after;
+			if (head != null) {
+				head.before = null;
+			}
+			h.invalidated = true;
+			length--;
+			return h;
+		}
+
+		public Node push(final AITask task) {
+			final Node node = new Node(task, parentKey);
+			node.invalidated = false;
+			if (tail != null) {
+				tail.after = node;
+				node.before = tail;
+				tail = node;
+				length += 1;
+			} else {
+				head = tail = node;
+				length = 1;
+			}
+			return node;
+		}
+
+		public Node insertBefore(final AITask task, final Node node) {
+			if (node.parentKey != parentKey || node.invalidated) {
+				throw new RuntimeException();
+			}
+			final Node n = new Node(task, parentKey);
+			n.invalidated = false;
+			if (node == head) {
+				n.after = head;
+				head.before = n;
+				head = n;
+			} else {
+				final Node before = node.before;
+				if (before != null) {
+					before.after = n;
+				}
+				n.before = before;
+				node.before = n;
+				n.after = node;
+			}
+			length++;
+			return n;
+		}
+
+		public Node insertAfter(final AITask task, final Node node) {
+			if (node.parentKey != parentKey || node.invalidated) {
+				throw new RuntimeException();
+			}
+			final Node n = new Node(task, parentKey);
+			n.invalidated = false;
+			if (node == tail) {
+				n.before = tail;
+				tail.after = n;
+				tail = n;
+			} else {
+				final Node after = node.after;
+				if (after != null) {
+					after.before = n;
+				}
+				n.after = after;
+				node.after = n;
+				n.before = node;
+			}
+			length++;
+			return n;
+		}
+	}
+
+	private static final class Node {
+		private final AITask task;
+		private final Object parentKey;
+		private Node before;
+		private Node after;
+		private int attempts = 0;
+		private long duration = 0;
+		private boolean invalidated = true;
+
+		private Node(final AITask task, final Object key) {
+			this.task = task;
+			parentKey = key;
 		}
 	}
 }
