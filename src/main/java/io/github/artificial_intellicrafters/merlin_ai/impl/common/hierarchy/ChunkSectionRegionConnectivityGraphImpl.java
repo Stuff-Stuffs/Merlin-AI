@@ -7,6 +7,8 @@ import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 
+import java.util.Arrays;
+
 public class ChunkSectionRegionConnectivityGraphImpl<N, T extends OrablePredicate<N, T>> implements ChunkSectionRegionConnectivityGraph<N> {
 	private static final long[] EMPTY = new long[0];
 	private final Long2ObjectMap<long[]> links;
@@ -40,6 +42,25 @@ public class ChunkSectionRegionConnectivityGraphImpl<N, T extends OrablePredicat
 			return LongIterators.EMPTY_ITERATOR;
 		}
 		return LongIterators.wrap(scratch, 0, length);
+	}
+
+	@Override
+	public boolean unconditionalAdjacencyTo(final long start, final long query) {
+		return Arrays.binarySearch(links.getOrDefault(start, EMPTY), query) >= 0;
+	}
+
+	@Override
+	public boolean conditionalAdjacencyTo(final long start, final long query, final N pathContext) {
+		final ConditionalLinks<T> links = conditionalLinks.get(start);
+		if (links == null) {
+			return false;
+		}
+		for (int i = 0; i < links.links.length; i++) {
+			if (links.links[i] == query && ((T) links.conditions[i]).test(pathContext)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private record ConditionalLinks<T>(long[] links, OrablePredicate<?, ?>[] conditions) {

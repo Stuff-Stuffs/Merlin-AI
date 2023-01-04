@@ -1,9 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.client;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.datafixers.util.Pair;
-import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
-import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
@@ -17,206 +14,34 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.OrablePredicate;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.hierarchy.ChunkSectionRegionsImpl;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest;
-import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.*;
-import it.unimi.dsi.fastutil.HashCommon;
-import it.unimi.dsi.fastutil.longs.*;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.BasicLocationType;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.TestNodeProducer;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectMap;
 import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.ShortArrayFIFOQueue;
 import it.unimi.dsi.fastutil.shorts.ShortPriorityQueue;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.option.KeyBind;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
-import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.BitSetVoxelSet;
-import net.minecraft.util.shape.VoxelSet;
 import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.chunk.ChunkSection;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFW;
-import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
-
-import java.util.OptionalLong;
 
 public final class LocationCacheTest {
 	public static final ValidLocationSetType<BasicLocationType> ONE_X_TWO_BASIC_LOCATION_SET_TYPE;
 	public static final NeighbourGetter<Entity, BasicAIPathNode> BASIC_NEIGHBOUR_GETTER;
 	public static final HierarchyInfo<BasicLocationType, Void, CacheData, Tmp> HIERARCHY_INFO;
-	public static final KeyBind PATH_KEYBIND = new KeyBind("merlin_ai.location_cache_test", GLFW.GLFW_KEY_F7, "misc");
-	public static final KeyBind REGION_KEYBIND = new KeyBind("merlin_ai.region_test", GLFW.GLFW_KEY_F8, "misc");
-	public static final KeyBind LINK_KEYBIND = new KeyBind("merlin_ai.link_test", GLFW.GLFW_KEY_F9, "misc");
-	private static AIPath<Entity, BasicAIPathNode> LAST_PATH = null;
-	private static int REMAINING_VISIBLE_TICKS = 0;
-	private static final Long2ObjectMap<BakeableDebugRenderers.Key> VISIBLE = new Long2ObjectOpenHashMap<>();
-	private static ChunkSectionPos LAST_REGIONS_POS = null;
-	private static int REMAINING_VISIBLE_REGION_TICKS = 0;
-	private static int REMAINING_VISIBLE_LINK_TICKS = 0;
-	private static @Nullable ChunkSectionPos LAST_SECTION_POS = null;
-	private static OptionalLong LAST_SECTION = OptionalLong.empty();
 
 	public static void init() {
-		KeyBindingHelper.registerKeyBinding(PATH_KEYBIND);
-		KeyBindingHelper.registerKeyBinding(REGION_KEYBIND);
-		KeyBindingHelper.registerKeyBinding(LINK_KEYBIND);
-		ClientTickEvents.START.register(client -> {
-			if (PATH_KEYBIND.wasPressed()) {
-				final AIPather<Entity, BasicAIPathNode> pather = new AIPather<>(client.world, new TestNodeProducer(ONE_X_TWO_BASIC_LOCATION_SET_TYPE), Entity::getBlockPos);
-				LAST_PATH = pather.calculatePath(PathTarget.yLevel(-64), 256, true, client.cameraEntity);
-				if (LAST_PATH != null) {
-					REMAINING_VISIBLE_TICKS = 600;
-				}
-			}
-			if (REGION_KEYBIND.wasPressed()) {
-				final BlockPos pos = client.cameraEntity.getBlockPos();
-				LAST_REGIONS_POS = ChunkSectionPos.from(pos);
-				VISIBLE.clear();
-				REMAINING_VISIBLE_REGION_TICKS = 600;
-			}
-			if (LINK_KEYBIND.isPressed()) {
-				final ChunkSectionPos sectionPos = ChunkSectionPos.from(client.cameraEntity.getBlockPos());
-				final short local = ChunkSectionPos.packLocal(client.cameraEntity.getBlockPos());
-				final ChunkRegionGraph.Entry entry = ((AIWorld) client.world).merlin_ai$getChunkGraph().getEntry(sectionPos);
-				if (entry != null) {
-					final ChunkSectionRegions regions = entry.getRegions(HIERARCHY_INFO, client.world.getTime(), null);
-					if (regions != null) {
-						final ChunkSectionRegion region = regions.query(local);
-						if (region != null) {
-							LAST_SECTION = OptionalLong.of(region.id());
-							LAST_SECTION_POS = sectionPos;
-							REMAINING_VISIBLE_LINK_TICKS = 6000;
-						}
-					}
-				}
-			}
-		});
-		WorldRenderEvents.START.register(context -> {
-			if (LAST_PATH != null && REMAINING_VISIBLE_LINK_TICKS > 0) {
-				final DustParticleEffect effect = new DustParticleEffect(new Vector3f(1, 0, 0), 1);
-				if (REMAINING_VISIBLE_LINK_TICKS % 10 == 0) {
-					for (final Object o : LAST_PATH.getNodes()) {
-						final BasicAIPathNode node = (BasicAIPathNode) o;
-						context.world().addParticle(effect, node.x + 0.5, node.y + 0.5, node.z + 0.5, 0, 0, 0);
-					}
-				}
-				REMAINING_VISIBLE_TICKS--;
-				if (REMAINING_VISIBLE_TICKS == 0) {
-					LAST_PATH = null;
-				}
-			}
-			if (REMAINING_VISIBLE_LINK_TICKS > 0) {
-				REMAINING_VISIBLE_LINK_TICKS--;
-				if (LAST_SECTION.isPresent() && LAST_SECTION_POS != null) {
-					final BlockPos minPos = LAST_SECTION_POS.getMinPos();
-					final ShapeCache cache = ShapeCache.create(context.world(), minPos.add(-16, -16, -16), minPos.add(16, 16, 16), null);
-					final ChunkSectionRegionConnectivityGraph<Void> graph = cache.getGraph(minPos.getX(), minPos.getY(), minPos.getZ(), HIERARCHY_INFO);
-					if (graph != null) {
-						final LongIterator iterator = graph.unconditionalLinks(LAST_SECTION.getAsLong());
-						while (iterator.hasNext()) {
-							final long key = iterator.nextLong();
-							final ChunkSectionRegion region = cache.getRegion(key, HIERARCHY_INFO);
-							if (region != null) {
-								final ChunkSectionPos pos = ChunkSectionRegionsImpl.unpackChunkSectionPosCompact(region.id(), cache);
-								final BitSetVoxelSet set = new BitSetVoxelSet(16, 16, 16);
-								for (int i = 0; i < 16; i++) {
-									for (int j = 0; j < 16; j++) {
-										for (int k = 0; k < 16; k++) {
-											if (region.contains(PathingChunkSection.packLocal(i, j, k))) {
-												set.set(i, j, k);
-											}
-										}
-									}
-								}
-								final int color = (int) HashCommon.murmurHash3(HashCommon.murmurHash3(key)) | 0xFF00_0000;
-								final VertexConsumer buffer = context.consumers().getBuffer(RenderLayer.LINES);
-								final int ox = pos.getMinX();
-								final int oy = pos.getMinY();
-								final int oz = pos.getMinZ();
-								final MatrixStack matrices = context.matrixStack();
-								matrices.push();
-								final Vec3d d = context.camera().getPos();
-								matrices.translate(-d.x, -d.y, -d.z);
-								set.forEachEdge((i, j, k, l, m, n) -> {
-									final Vec3d start = new Vec3d(i, j, k);
-									final Vec3d end = new Vec3d(l, m, n);
-									buffer.m_rkxaaknb(matrices.peek().getModel(), (float) start.x + ox, (float) start.y + oy, (float) start.z + oz).color(color).normal(0, 1, 0).next();
-									buffer.m_rkxaaknb(matrices.peek().getModel(), (float) end.x + ox, (float) end.y + oy, (float) end.z + oz).color(color).normal(0, 1, 0).next();
-								}, true);
-								matrices.pop();
-							}
-						}
-					}
-				}
-			}
-		});
-		ClientTickEvents.END.register(client -> {
-			if (LAST_REGIONS_POS != null && REMAINING_VISIBLE_REGION_TICKS > 0) {
-				if (client.world == null) {
-					return;
-				}
-				for (int offX = -1; offX <= 1; offX++) {
-					for (int offY = -1; offY <= 1; offY++) {
-						for (int offZ = -1; offZ <= 1; offZ++) {
-							final ChunkSectionPos sectionPos = LAST_REGIONS_POS.add(offX, offY, offZ);
-							final ChunkRegionGraph.Entry e = ((AIWorld) client.world).merlin_ai$getChunkGraph().getEntry(sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
-							final ChunkSectionRegions lastRegions = e == null ? null : e.getRegions(HIERARCHY_INFO, client.world.getTime(), null);
-							final long chunkKey = sectionPos.asLong();
-							final boolean b = VISIBLE.containsKey(chunkKey);
-							if (lastRegions == null && b) {
-								VISIBLE.remove(chunkKey).delete();
-							} else if (lastRegions != null && !b) {
-								final Matrix4f matrix4f = new Matrix4f();
-								matrix4f.identity();
-								VISIBLE.put(chunkKey, BakeableDebugRenderers.render(consumers -> {
-									final Long2ObjectMap<VoxelSet> sets = new Long2ObjectOpenHashMap<>();
-									for (int i = 0; i < 16; i++) {
-										for (int j = 0; j < 16; j++) {
-											for (int k = 0; k < 16; k++) {
-												final ChunkSectionRegion query = lastRegions.query(PathingChunkSection.packLocal(i, j, k));
-												if (query != null) {
-													sets.computeIfAbsent(query.id(), l -> new BitSetVoxelSet(16, 16, 16)).set(i, j, k);
-												}
-											}
-										}
-									}
-									final VertexConsumer consumer = consumers.getBuffer(RenderLayer.LINES);
-									for (final Long2ObjectMap.Entry<VoxelSet> entry : sets.long2ObjectEntrySet()) {
-										final int color = (int) HashCommon.murmurHash3(HashCommon.murmurHash3(entry.getLongKey() + sectionPos.asLong())) | 0xFF00_0000;
-										final int ox = sectionPos.getMinX();
-										final int oy = sectionPos.getMinY();
-										final int oz = sectionPos.getMinZ();
-										entry.getValue().forEachEdge((i, j, k, l, m, n) -> {
-											final Vec3d start = new Vec3d(i, j, k);
-											final Vec3d end = new Vec3d(l, m, n);
-											consumer.vertex((float) start.x + ox, (float) start.y + oy, (float) start.z + oz).color(color).normal(0, 1, 0).next();
-											consumer.vertex((float) end.x + ox, (float) end.y + oy, (float) end.z + oz).color(color).normal(0, 1, 0).next();
-										}, true);
-									}
-								}));
-							}
-						}
-					}
-				}
-				REMAINING_VISIBLE_REGION_TICKS--;
-				if (REMAINING_VISIBLE_REGION_TICKS == 0) {
-					VISIBLE.clear();
-					LAST_REGIONS_POS = null;
-				}
-			}
-		});
+
 	}
 
 	private LocationCacheTest() {
@@ -298,14 +123,14 @@ public final class LocationCacheTest {
 			}
 
 			@Override
-			public Pair<ChunkSectionRegions, CacheData> regionify(final ShapeCache shapeCache, final ChunkSectionPos pos, final ValidLocationSetType<BasicLocationType> type, final HeightLimitView limitView, AITaskExecutionContext executionContext) {
+			public Pair<ChunkSectionRegions, CacheData> regionify(final ShapeCache shapeCache, final ChunkSectionPos pos, final ValidLocationSetType<BasicLocationType> type, final HeightLimitView limitView, final AITaskExecutionContext executionContext) {
 				int missing = 0;
 				for (int i = -1; i <= 1; i++) {
 					for (int j = -1; j <= 1; j++) {
 						if (!shapeCache.isOutOfHeightLimit(pos.getMinY() + j * 16)) {
 							for (int k = -1; k <= 1; k++) {
-								if (!shapeCache.doesLocationSetExist(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, type)) {
-									shapeCache.getLocationType(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, type);
+								if (!shapeCache.doesLocationSetExist(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, type, executionContext)) {
+									shapeCache.getLocationType(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, type, executionContext);
 									missing++;
 								}
 							}
@@ -321,7 +146,7 @@ public final class LocationCacheTest {
 					for (int y = 0; y < 16; y++) {
 						for (int z = 0; z < 16; z++) {
 							if (!builder.contains(PathingChunkSection.packLocal(x, y, z))) {
-								floodFill(x, y, z, shapeCache, builder, type, pos, data);
+								floodFill(x, y, z, shapeCache, builder, type, pos, data, executionContext);
 							}
 						}
 					}
@@ -329,56 +154,61 @@ public final class LocationCacheTest {
 				return Pair.of(builder.build(), data);
 			}
 
-			private void check(final int x, final int y, final int z, final int sX, final int sY, final int sZ, final int offY, final ShapeCache cache, final ChunkSectionRegions.RegionKey key, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ShortPriorityQueue queue, final LongSet outgoing, final boolean expand) {
-				final int height = y + sY + offY;
-				final boolean limit = cache.isOutOfHeightLimit(height);
-				short i = PathingChunkSection.packLocal(x + 1, y + offY, z);
-				if (x != 15) {
-					if (expand && !builder.contains(i) && cache.getLocationType(x + 1 + sX, height, z + sZ, type) == BasicLocationType.GROUND) {
-						queue.enqueue(i);
-						builder.expand(key, i);
-					}
+			private void checkBlockDouble(final int x, final int y, final int z, final int ox, final int oy, final int oz, final ShapeCache cache, final ChunkSectionRegions.RegionKey key, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ShortPriorityQueue queue, final LongSet outgoing, final boolean expand, @Nullable final AITaskExecutionContext executionContext) {
+				final boolean outOfBounds = cache.isOutOfHeightLimit(oy);
+				if (outOfBounds) {
+					return;
 				}
-				if (!limit && !builder.contains(i)) {
-					outgoing.add(BlockPos.asLong(x + sX + 1, height, z + sZ));
+				boolean added = false;
+				final short i = PathingChunkSection.packLocal(x, y, z);
+				if (expand && !(added = builder.contains(i)) && cache.getLocationType(x, y, z, type, executionContext) == BasicLocationType.GROUND && cache.getLocationType(ox, oy, oz, type, executionContext) == BasicLocationType.OPEN) {
+					queue.enqueue(i);
+					builder.expand(key, i);
+					added = true;
 				}
-				i = PathingChunkSection.packLocal(x - 1, y + offY, z);
-				if (x != 0) {
-					if (expand && !builder.contains(i) && cache.getLocationType(x - 1 + sX, height, z + sZ, type) == BasicLocationType.GROUND) {
-						queue.enqueue(i);
-						builder.expand(key, i);
-					}
-				}
-				if (!limit && !builder.contains(i)) {
-					outgoing.add(BlockPos.asLong(x + sX - 1, height, z + sZ));
-				}
-				i = PathingChunkSection.packLocal(x, y + offY, z + 1);
-				if (z != 15) {
-					if (expand && !builder.contains(i) && cache.getLocationType(x + sX, height, z + 1 + sZ, type) == BasicLocationType.GROUND) {
-						queue.enqueue(i);
-						builder.expand(key, i);
-					}
-				}
-				if (!limit && !builder.contains(i)) {
-					outgoing.add(BlockPos.asLong(x + sX, height, z + sZ + 1));
-				}
-				i = PathingChunkSection.packLocal(x, y + offY, z - 1);
-				if (z != 0) {
-					if (expand && !builder.contains(i) && cache.getLocationType(x + sX, height, z - 1 + sZ, type) == BasicLocationType.GROUND) {
-						queue.enqueue(i);
-						builder.expand(key, i);
-					}
-				}
-				if (!limit && !builder.contains(i)) {
-					outgoing.add(BlockPos.asLong(x + sX, height, z + sZ - 1));
+				if (!added) {
+					outgoing.add(BlockPos.asLong(x, y, z));
 				}
 			}
 
-			private void floodFill(final int lx, final int ly, final int lz, final ShapeCache cache, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ChunkSectionPos pos, final CacheData data) {
-				final int sX = pos.getMinX();
-				final int sY = pos.getMinY();
-				final int sZ = pos.getMinZ();
-				if (cache.getLocationType(lx + sX, ly + sY, lz + sZ, type) != BasicLocationType.GROUND) {
+			private void checkBlock(final int x, final int y, final int z, final ShapeCache cache, final ChunkSectionRegions.RegionKey key, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ShortPriorityQueue queue, final LongSet outgoing, final boolean expand, @Nullable final AITaskExecutionContext executionContext) {
+				boolean added = false;
+				final short i = PathingChunkSection.packLocal(x, y, z);
+				BasicLocationType locationType = null;
+				if (expand && !(added = builder.contains(i)) && (locationType = cache.getLocationType(x, y, z, type, executionContext)) == BasicLocationType.GROUND) {
+					queue.enqueue(i);
+					builder.expand(key, i);
+					added = true;
+				}
+				if (!added && (locationType == BasicLocationType.OPEN || cache.getLocationType(x, y, z, type, executionContext) == BasicLocationType.GROUND)) {
+					outgoing.add(BlockPos.asLong(x, y, z));
+				}
+			}
+
+			private void check(final int x, final int y, final int z, final ShapeCache cache, final ChunkSectionRegions.RegionKey key, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ShortPriorityQueue queue, final LongSet outgoing, @Nullable final AITaskExecutionContext executionContext) {
+				checkBlock(x, y, z + 1, cache, key, builder, type, queue, outgoing, (z & 15) != 15, executionContext);
+				checkBlock(x, y, z - 1, cache, key, builder, type, queue, outgoing, (z & 15) != 0, executionContext);
+				checkBlock(x + 1, y, z, cache, key, builder, type, queue, outgoing, (x & 15) != 15, executionContext);
+				checkBlock(x - 1, y, z, cache, key, builder, type, queue, outgoing, (x & 15) != 0, executionContext);
+				if (!cache.isOutOfHeightLimit(y - 1)) {
+					checkBlockDouble(x, y - 1, z + 1, x, y, z + 1, cache, key, builder, type, queue, outgoing, (y & 15) != 0 && (z & 15) != 15, executionContext);
+					checkBlockDouble(x, y - 1, z - 1, x, y, z - 1, cache, key, builder, type, queue, outgoing, (y & 15) != 0 && (z & 15) != 0, executionContext);
+					checkBlockDouble(x + 1, y - 1, z, x + 1, y, z, cache, key, builder, type, queue, outgoing, (y & 15) != 0 && (x & 15) != 15, executionContext);
+					checkBlockDouble(x - 1, y - 1, z, x - 1, y, z, cache, key, builder, type, queue, outgoing, (y & 15) != 0 && (x & 15) != 0, executionContext);
+				}
+				if (!cache.isOutOfHeightLimit(y + 1) && cache.getLocationType(x, y + 1, z, type, executionContext) == BasicLocationType.OPEN) {
+					checkBlock(x, y + 1, z + 1, cache, key, builder, type, queue, outgoing, (y & 15) != 15 && (z & 15) != 15, executionContext);
+					checkBlock(x, y + 1, z - 1, cache, key, builder, type, queue, outgoing, (y & 15) != 15 && (z & 15) != 0, executionContext);
+					checkBlock(x + 1, y + 1, z, cache, key, builder, type, queue, outgoing, (y & 15) != 15 && (x & 15) != 15, executionContext);
+					checkBlock(x - 1, y + 1, z, cache, key, builder, type, queue, outgoing, (y & 15) != 15 && (x & 15) != 0, executionContext);
+				}
+			}
+
+			private void floodFill(final int lx, final int ly, final int lz, final ShapeCache cache, final ChunkSectionRegions.Builder builder, final ValidLocationSetType<BasicLocationType> type, final ChunkSectionPos pos, final CacheData data, @Nullable final AITaskExecutionContext executionContext) {
+				final int sx = pos.getMinX();
+				final int sy = pos.getMinY();
+				final int sz = pos.getMinZ();
+				if (cache.getLocationType(lx + sx, ly + sy, lz + sz, type, executionContext) != BasicLocationType.GROUND) {
 					return;
 				}
 				final ShortPriorityQueue queue = new ShortArrayFIFOQueue(16 * 16);
@@ -393,14 +223,15 @@ public final class LocationCacheTest {
 					final int x = PathingChunkSection.unpackLocalX(s);
 					final int y = PathingChunkSection.unpackLocalY(s);
 					final int z = PathingChunkSection.unpackLocalZ(s);
-					check(x, y, z, sX, sY, sZ, 0, cache, key, builder, type, queue, outgoing, true);
-					check(x, y, z, sX, sY, sZ, -1, cache, key, builder, type, queue, outgoing, y != 0);
-					check(x, y, z, sX, sY, sZ, 1, cache, key, builder, type, queue, outgoing, y != 15);
+					check(x + sx, y + sy, z + sz, cache, key, builder, type, queue, outgoing, executionContext);
+				}
+				if (outgoing.isEmpty()) {
+					data.data.remove(local);
 				}
 			}
 
 			@Override
-			public ChunkSectionRegionConnectivityGraph<Void> link(final CacheData precomputed, final ShapeCache shapeCache, final ChunkSectionPos pos, final ChunkSectionRegions regions, AITaskExecutionContext executionContext) {
+			public ChunkSectionRegionConnectivityGraph<Void> link(final CacheData precomputed, final ShapeCache shapeCache, final ChunkSectionPos pos, final ChunkSectionRegions regions, final AITaskExecutionContext executionContext) {
 				final ChunkSectionRegionConnectivityGraph.Builder<Void, Tmp> builder = ChunkSectionRegionConnectivityGraph.builder(HIERARCHY_INFO, regions);
 				for (final Short2ObjectMap.Entry<LongSet> entry : precomputed.data.short2ObjectEntrySet()) {
 					final ChunkSectionRegion region = regions.query(entry.getShortKey());
@@ -412,7 +243,7 @@ public final class LocationCacheTest {
 							final int x = BlockPos.unpackLongX(packed);
 							int y = BlockPos.unpackLongY(packed);
 							final int z = BlockPos.unpackLongZ(packed);
-							ChunkSectionRegions chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO);
+							ChunkSectionRegions chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO, executionContext);
 							boolean accepted = false;
 							if (chunk != null) {
 								final ChunkSectionRegion query = chunk.query(PathingChunkSection.packLocal(x, y, z));
@@ -424,11 +255,11 @@ public final class LocationCacheTest {
 							if (accepted) {
 								continue;
 							}
-							while (!shapeCache.isOutOfHeightLimit(y) && shapeCache.getLocationType(x, y, z, ONE_X_TWO_BASIC_LOCATION_SET_TYPE) == BasicLocationType.OPEN) {
+							while (!shapeCache.isOutOfHeightLimit(y) && shapeCache.getLocationType(x, y, z, ONE_X_TWO_BASIC_LOCATION_SET_TYPE, executionContext) == BasicLocationType.OPEN) {
 								y--;
 							}
-							if (!shapeCache.isOutOfHeightLimit(y) && shapeCache.getLocationType(x, y, z, ONE_X_TWO_BASIC_LOCATION_SET_TYPE) == BasicLocationType.GROUND) {
-								chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO);
+							if (!shapeCache.isOutOfHeightLimit(y) && shapeCache.getLocationType(x, y, z, ONE_X_TWO_BASIC_LOCATION_SET_TYPE, executionContext) == BasicLocationType.GROUND) {
+								chunk = shapeCache.getRegions(x, y, z, HIERARCHY_INFO, executionContext);
 								if (chunk != null) {
 									final ChunkSectionRegion query = chunk.query(PathingChunkSection.packLocal(x, y, z));
 									if (query != null && query.id() != region.id()) {

@@ -54,25 +54,25 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 			throw new RuntimeException();
 		}
 		if (shouldContinue.getAsBoolean()) {
-			final @Nullable Optional<C> optional = precomputed.get();
-			final ChunkSectionRegions regions = this.regions.get();
-			if (optional != null && regions != null) {
-				int missing = 0;
-				final ShapeCache shapeCache = cacheFactory.get();
-				for (int i = -1; i <= 1; i++) {
-					for (int j = -1; j <= 1; j++) {
-						if (!shapeCache.isOutOfHeightLimit(pos.getMinY() + j * 16)) {
-							for (int k = -1; k <= 1; k++) {
-								if (shapeCache.getRegions(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, info) == null) {
-									missing++;
-								}
+			int missing = 0;
+			final ShapeCache shapeCache = cacheFactory.get();
+			for (int i = -1; i <= 1; i++) {
+				for (int j = -1; j <= 1; j++) {
+					if (!shapeCache.isOutOfHeightLimit(pos.getMinY() + j * 16)) {
+						for (int k = -1; k <= 1; k++) {
+							if (shapeCache.getRegions(pos.getMinX() + i * 16, pos.getMinY() + j * 16, pos.getMinZ() + k * 16, info, context) == null) {
+								missing++;
 							}
 						}
 					}
 				}
-				if (missing != 0) {
-					return;
-				}
+			}
+			if (missing != 0) {
+				return;
+			}
+			final @Nullable Optional<C> optional = precomputed.get();
+			final ChunkSectionRegions regions = this.regions.get();
+			if (optional != null && regions != null) {
 				output = info.link(optional.orElse(null), shapeCache, pos, regions, context);
 			}
 		}

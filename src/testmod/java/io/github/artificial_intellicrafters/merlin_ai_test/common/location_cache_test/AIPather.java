@@ -41,7 +41,7 @@ public class AIPather<T, N extends AIPathNode<T, N>> {
 
 	private PathInfo<T, N> find(final PathTarget pathTarget, final double max, final boolean partial, final T context) {
 		final BlockPos startingPos = startingPositionRetriever.apply(context);
-		final ShapeCache cache = ShapeCache.create(world, startingPos.add(-256, -256, -256), startingPos.add(256, 256, 256), null);
+		final ShapeCache cache = ShapeCache.create(world, startingPos.add(-256, -256, -256), startingPos.add(256, 256, 256));
 		final N startingNode = neighbourGetter.createStartNode(cache, startingPos.getX(), startingPos.getY(), startingPos.getZ());
 		if (startingNode == null) {
 			return new PathInfo<>(0, null);

@@ -4,4 +4,8 @@ public interface ChunkSectionRegion {
 	long id();
 
 	boolean contains(short s);
+
+	short any();
+
+	short[] all();
 }

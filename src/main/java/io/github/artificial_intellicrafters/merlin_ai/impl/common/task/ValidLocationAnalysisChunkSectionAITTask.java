@@ -40,7 +40,7 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 		this.cancel = cancel;
 	}
 
-	public void setContext(AITaskExecutionContext context) {
+	public void setContext(final AITaskExecutionContext context) {
 		this.context = context;
 	}
 

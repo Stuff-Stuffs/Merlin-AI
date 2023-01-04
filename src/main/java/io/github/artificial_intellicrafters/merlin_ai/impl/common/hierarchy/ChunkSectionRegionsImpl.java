@@ -86,7 +86,7 @@ public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
 	public static int unpackChunkSectionPosX(final long packed) {
 		final int i = (int) ((packed & X_MASK) >>> X_SHIFT);
 		if ((i & (1 << (X_BITS - 1))) != 0) {
-			return -(i & ((1 << (Z_BITS - 1)) - 1));
+			return -(i & ((1 << (X_BITS - 1)) - 1));
 		}
 		return i;
 	}

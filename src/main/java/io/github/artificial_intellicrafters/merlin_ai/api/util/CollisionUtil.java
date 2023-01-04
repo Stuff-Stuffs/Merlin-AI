@@ -14,12 +14,12 @@ public final class CollisionUtil {
 	private static final VoxelShape EMPTY = VoxelShapes.empty();
 
 	private static CuboidBlockIterator collisionArea(final Box box) {
-		final int minX = MathHelper.floor(box.minX - 0.0001f) - 1;
-		final int maxX = MathHelper.floor(box.maxX + 0.0001f) + 1;
-		final int minY = MathHelper.floor(box.minY - 0.0001f) - 1;
-		final int maxY = MathHelper.floor(box.maxY + 0.0001f) + 1;
-		final int minZ = MathHelper.floor(box.minZ - 0.0001f) - 1;
-		final int maxZ = MathHelper.floor(box.maxZ + 0.0001f) + 1;
+		final int minX = MathHelper.floor(box.minX) - 1;
+		final int maxX = MathHelper.floor(box.maxX) + 1;
+		final int minY = MathHelper.floor(box.minY) - 1;
+		final int maxY = MathHelper.floor(box.maxY) + 1;
+		final int minZ = MathHelper.floor(box.minZ) - 1;
+		final int maxZ = MathHelper.floor(box.maxZ) + 1;
 		return new CuboidBlockIterator(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 
@@ -27,13 +27,13 @@ public final class CollisionUtil {
 		final CuboidBlockIterator blockIterator = collisionArea(box);
 		VoxelShape boxShape = null;
 		do {
-			final int x = blockIterator.getX();
-			final int y = blockIterator.getY();
-			final int z = blockIterator.getZ();
 			final int count = blockIterator.getEdgeCoordinatesCount();
 			if (count == 3) {
 				continue;
 			}
+			final int x = blockIterator.getX();
+			final int y = blockIterator.getY();
+			final int z = blockIterator.getZ();
 			final BlockState state = world.getBlockState(x, y, z);
 			if (state.isAir() || !((count != 1 || state.exceedsCube()) && (count != 2 || state.getBlock() == Blocks.MOVING_PISTON))) {
 				continue;

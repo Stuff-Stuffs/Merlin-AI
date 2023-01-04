@@ -38,15 +38,13 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private final int smallCacheMask;
 	private final long[] locationKeys;
 	private final ChunkRegionGraph.Entry[] locationSets;
-	private final @Nullable AITaskExecutionContext executionContext;
 
-	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize, @Nullable AITaskExecutionContext context) {
+	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
 		cacheMask = cacheSize - 1;
 		keys = new long[cacheSize];
 		blockStates = new BlockState[cacheSize];
 		collisionShapes = new VoxelShape[cacheSize];
-		executionContext = context;
 		Arrays.fill(keys, DEFAULT_KEY);
 		final int smallCacheSize = Math.max(cacheSize / 4, 16);
 		smallCacheMask = smallCacheSize - 1;
@@ -87,7 +85,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public boolean doesLocationSetExist(final int x, final int y, final int z, final ValidLocationSetType<?> type) {
+	public boolean doesLocationSetExist(final int x, final int y, final int z, final ValidLocationSetType<?> type, @Nullable AITaskExecutionContext executionContext) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
 		if (locationKeys[pos] == idx) {
@@ -156,7 +154,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public @Nullable <T> ValidLocationSet<T> getLocationSetType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType) {
+	public @Nullable <T> ValidLocationSet<T> getLocationSetType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType, @Nullable AITaskExecutionContext executionContext) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
 		if (locationKeys[pos] == idx) {
@@ -167,7 +165,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public ChunkSectionRegions getRegions(final int x, final int y, final int z, final HierarchyInfo<?, ?, ?, ?> info) {
+	public @Nullable ChunkSectionRegions getRegions(final int x, final int y, final int z, final HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
 		if (locationKeys[pos] == idx) {
@@ -178,7 +176,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public <N> ChunkSectionRegionConnectivityGraph<N> getGraph(final int x, final int y, final int z, final HierarchyInfo<?, N, ?, ?> info) {
+	public @Nullable <N> ChunkSectionRegionConnectivityGraph<N> getGraph(final int x, final int y, final int z, final HierarchyInfo<?, N, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
 		if (locationKeys[pos] == idx) {
@@ -189,7 +187,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public @Nullable ChunkSectionRegion getRegion(final long key, final HierarchyInfo<?, ?, ?, ?> info) {
+	public @Nullable ChunkSectionRegion getRegion(final long key, final HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
 		final int x = ChunkSectionRegionsImpl.unpackChunkSectionPosX(key);
 		final int y = ChunkSectionRegionsImpl.unpackChunkSectionPosY(key, world);
 		final int z = ChunkSectionRegionsImpl.unpackChunkSectionPosZ(key);

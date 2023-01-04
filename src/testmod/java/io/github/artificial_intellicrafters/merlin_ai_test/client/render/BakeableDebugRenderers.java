@@ -1,4 +1,4 @@
-package io.github.artificial_intellicrafters.merlin_ai_test.client;
+package io.github.artificial_intellicrafters.merlin_ai_test.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 
 import java.lang.ref.ReferenceQueue;
@@ -17,17 +18,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
+//TODO make this less buggy
 public final class BakeableDebugRenderers {
 	private static final ReferenceQueue<KeyImpl> CLEANUP_QUEUE = new ReferenceQueue<>();
 	private static final Map<KeyHolder, Rendered[]> RENDERED_OBJECTS = new Reference2ReferenceOpenHashMap<>();
 	private static final Tessellator TESSELLATOR = new Tessellator();
 	private static long NEXT_ID = 0;
 
-	public static Key render(final Consumer<VertexConsumerProvider> renderer) {
+	public static Key render(final Consumer<VertexConsumerProvider> renderer, final Supplier<Vec3d> offset) {
 		synchronized (TESSELLATOR) {
 			final KeyImpl impl = new KeyImpl(NEXT_ID++);
-			final KeyHolder holder = new KeyHolder(impl, CLEANUP_QUEUE);
+			final KeyHolder holder = new KeyHolder(impl, CLEANUP_QUEUE, offset);
 			final VertexConsumerProviderImpl consumerProvider = new VertexConsumerProviderImpl(TESSELLATOR.getBufferBuilder(), (layer, rendered) -> {
 				final VertexBuffer buffer = new VertexBuffer();
 				buffer.bind();
@@ -51,9 +54,13 @@ public final class BakeableDebugRenderers {
 	private static void remove(final long index) {
 		final Iterator<Map.Entry<KeyHolder, Rendered[]>> iterator = RENDERED_OBJECTS.entrySet().iterator();
 		while (iterator.hasNext()) {
-			final KeyHolder key = iterator.next().getKey();
+			final Map.Entry<KeyHolder, Rendered[]> entry = iterator.next();
+			final KeyHolder key = entry.getKey();
 			final KeyImpl k = key.get();
 			if (k != null && k.index == index) {
+				for (final Rendered rendered : entry.getValue()) {
+					rendered.buffer().close();
+				}
 				iterator.remove();
 			}
 		}
@@ -80,12 +87,17 @@ public final class BakeableDebugRenderers {
 				}
 			}
 		}
-		for (final Rendered[] rendereds : RENDERED_OBJECTS.values()) {
-			for (final Rendered rendered : rendereds) {
-				if(!rendered.buffer().invalid()) {
+		final Matrix4f copy = new Matrix4f();
+		for (final Map.Entry<KeyHolder, Rendered[]> entry : RENDERED_OBJECTS.entrySet()) {
+			copy.identity();
+			copy.set(modelView);
+			final Vec3d offset = entry.getKey().offset.get();
+			copy.translate((float) offset.x, (float) offset.y, (float) offset.z);
+			for (final Rendered rendered : entry.getValue()) {
+				if (!rendered.buffer().invalid()) {
 					rendered.buffer().bind();
 					rendered.layer().startDrawing();
-					rendered.buffer().draw(modelView, proj, RenderSystem.getShader());
+					rendered.buffer().draw(copy, proj, RenderSystem.getShader());
 					rendered.layer().endDrawing();
 				}
 			}
@@ -117,7 +129,7 @@ public final class BakeableDebugRenderers {
 		}
 
 		private void end() {
-			if(layer!=null) {
+			if (layer != null) {
 				consumer.accept(layer, builder.end());
 			}
 		}
@@ -152,10 +164,12 @@ public final class BakeableDebugRenderers {
 
 	private static final class KeyHolder extends WeakReference<KeyImpl> {
 		private final long index;
+		private final Supplier<Vec3d> offset;
 
-		public KeyHolder(final KeyImpl referent, final ReferenceQueue<? super KeyImpl> q) {
+		public KeyHolder(final KeyImpl referent, final ReferenceQueue<? super KeyImpl> q, final Supplier<Vec3d> offset) {
 			super(referent, q);
 			index = referent.index;
+			this.offset = offset;
 		}
 
 		@Override

@@ -27,20 +27,20 @@ public interface ShapeCache extends BlockView {
 
 	VoxelShape getCollisionShape(int x, int y, int z);
 
-	default <T> T getLocationType(final BlockPos pos, final ValidLocationSetType<T> validLocationSetType) {
-		return getLocationType(pos.getX(), pos.getY(), pos.getZ(), validLocationSetType);
+	default <T> T getLocationType(final BlockPos pos, final ValidLocationSetType<T> validLocationSetType, @Nullable final AITaskExecutionContext executionContext) {
+		return getLocationType(pos.getX(), pos.getY(), pos.getZ(), validLocationSetType, executionContext);
 	}
 
-	<T> @Nullable ValidLocationSet<T> getLocationSetType(int x, int y, int z, ValidLocationSetType<T> validLocationSetType);
+	<T> @Nullable ValidLocationSet<T> getLocationSetType(int x, int y, int z, ValidLocationSetType<T> validLocationSetType, @Nullable AITaskExecutionContext executionContext);
 
-	ChunkSectionRegions getRegions(int x, int y, int z, HierarchyInfo<?, ?, ?, ?> info);
+	@Nullable ChunkSectionRegions getRegions(int x, int y, int z, HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext);
 
-	<N> ChunkSectionRegionConnectivityGraph<N> getGraph(int x, int y, int z, HierarchyInfo<?, N, ?, ?> info);
+	<N> @Nullable ChunkSectionRegionConnectivityGraph<N> getGraph(int x, int y, int z, HierarchyInfo<?, N, ?, ?> info, @Nullable AITaskExecutionContext executionContext);
 
-	@Nullable ChunkSectionRegion getRegion(long key, HierarchyInfo<?, ?, ?, ?> info);
+	@Nullable ChunkSectionRegion getRegion(long key, HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext);
 
-	default <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType) {
-		final ValidLocationSet<T> set = getLocationSetType(x, y, z, validLocationSetType);
+	default <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType, @Nullable final AITaskExecutionContext executionContext) {
+		final ValidLocationSet<T> set = getLocationSetType(x, y, z, validLocationSetType, executionContext);
 		if (set != null) {
 			return set.get(x, y, z);
 		} else {
@@ -49,7 +49,7 @@ public interface ShapeCache extends BlockView {
 	}
 
 
-	boolean doesLocationSetExist(int x, int y, int z, ValidLocationSetType<?> type);
+	boolean doesLocationSetExist(int x, int y, int z, ValidLocationSetType<?> type, @Nullable AITaskExecutionContext executionContext);
 
 	static int computeCacheSize(final BlockPos minPos, final BlockPos maxPos) {
 		if (minPos.compareTo(maxPos) >= 0) {
@@ -77,11 +77,11 @@ public interface ShapeCache extends BlockView {
 		return Math.max(Math.min(cacheSizeTarget, maxCacheSize), minCacheSize);
 	}
 
-	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, @Nullable final AITaskExecutionContext context) {
-		return create(world, minPos, maxPos, computeCacheSize(minPos, maxPos), context);
+	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos) {
+		return create(world, minPos, maxPos, computeCacheSize(minPos, maxPos));
 	}
 
-	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize, @Nullable final AITaskExecutionContext context) {
+	static ShapeCache create(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		if (minPos.compareTo(maxPos) >= 0) {
 			throw new IllegalArgumentException("Argument minPos must be less than maxPos!");
 		}
@@ -89,6 +89,6 @@ public interface ShapeCache extends BlockView {
 		if ((cacheSize & (cacheSize - 1)) != 0) {
 			throw new IllegalArgumentException("Cache size must be a power of 2!");
 		}
-		return new ShapeCacheImpl(world, minPos, maxPos, cacheSize, context);
+		return new ShapeCacheImpl(world, minPos, maxPos, cacheSize);
 	}
 }

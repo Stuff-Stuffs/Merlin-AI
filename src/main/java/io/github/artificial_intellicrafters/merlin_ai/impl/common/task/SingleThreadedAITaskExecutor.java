@@ -35,7 +35,7 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 				final Node node = queue.popEnd();
 				node.task.cancel();
 				if (MerlinAI.DEBUG) {
-					System.out.println("Canceled task " + node.task + ", took " + node.duration + "ms");
+					System.out.println("Evicted task " + node.task + ", took " + node.duration + "ms");
 				}
 			}
 			return Optional.of(new AITaskExecutionContextImpl(queue.insertBefore(task, impl.node)));
@@ -57,12 +57,17 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 
 	@Override
 	public void runTasks(final int maxMillis) {
-		final List<Node> finished = new ArrayList<>();
 		final List<Node> canceled = new ArrayList<>();
-		while (queue.length > 0) {
+		long l = System.currentTimeMillis();
+		boolean last = false;
+		while (queue.length > 0 && !last) {
 			final AITask task = queue.head.task;
 			if (task.done()) {
-				finished.add(queue.pop());
+				final Node t = queue.pop();
+				t.task.runFinish();
+				if (MerlinAI.DEBUG) {
+					System.out.println("Finished task " + t.task + ", took " + t.duration + "ms");
+				}
 			} else {
 				if (queue.head.attempts > MAX_ATTEMPTS) {
 					canceled.add(queue.pop());
@@ -70,21 +75,27 @@ public class SingleThreadedAITaskExecutor implements AITaskExecutor {
 					if (MerlinAI.DEBUG) {
 						final long preMillis = System.currentTimeMillis();
 						task.runIteration();
-						queue.head.duration += System.currentTimeMillis() - preMillis;
+						final long timeMillis = System.currentTimeMillis();
+						if(timeMillis-l > maxMillis) {
+							last = true;
+						}
+						queue.head.duration += timeMillis - preMillis;
 					} else {
 						task.runIteration();
+						final long timeMillis = System.currentTimeMillis();
+						if(timeMillis-l > maxMillis) {
+							last = true;
+						}
 					}
 					queue.head.attempts++;
 					if (task.done()) {
-						finished.add(queue.pop());
+						final Node t = queue.pop();
+						t.task.runFinish();
+						if (MerlinAI.DEBUG) {
+							System.out.println("Finished task " + t.task + ", took " + t.duration + "ms");
+						}
 					}
 				}
-			}
-		}
-		for (final Node task : finished) {
-			task.task.runFinish();
-			if (MerlinAI.DEBUG) {
-				System.out.println("Finished task " + task.task + ", took " + task.duration + "ms");
 			}
 		}
 		for (final Node task : canceled) {

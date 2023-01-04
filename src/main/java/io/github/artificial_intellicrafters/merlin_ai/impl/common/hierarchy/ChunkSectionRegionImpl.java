@@ -21,4 +21,14 @@ public class ChunkSectionRegionImpl implements ChunkSectionRegion {
 	public boolean contains(final short s) {
 		return ShortArrays.binarySearch(set, s) >= 0;
 	}
+
+	@Override
+	public short any() {
+		return set[0];
+	}
+
+	@Override
+	public short[] all() {
+		return set;
+	}
 }

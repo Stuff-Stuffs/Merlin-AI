@@ -9,6 +9,10 @@ public interface ChunkSectionRegionConnectivityGraph<N> {
 
 	LongIterator conditionalLinks(long id, N pathContext);
 
+	boolean unconditionalAdjacencyTo(long start, long query);
+
+	boolean conditionalAdjacencyTo(long start, long query, N pathContext);
+
 	static <N, O extends OrablePredicate<N, O>> Builder<N, O> builder(final HierarchyInfo<?, N, ?, O> info, final ChunkSectionRegions regions) {
 		return new ChunkSectionRegionConnectivityGraphImpl.BuilderImpl<>(regions);
 	}

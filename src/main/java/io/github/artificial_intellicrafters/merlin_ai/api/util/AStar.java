@@ -1,5 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -12,7 +13,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToLongFunction;
 
 public final class AStar {
-	public static final int MAX_SUCCESSORS = 64;
+	public static final int MAX_SUCCESSORS = 384;
 
 	public static <T, C> PathInfo<T> findPath(final T start, final C context, final ToLongFunction<T> keyGetter, final NeighbourGetter<T, C> neighbourGetter, final Function<T, @Nullable T> previousNodeGetter, final ToDoubleFunction<T> cost, final ToDoubleFunction<T> heuristic, final double error, final double maxCost, final boolean partial) {
 		final Object[] successors = new Object[MAX_SUCCESSORS];

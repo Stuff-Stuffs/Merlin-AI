@@ -18,7 +18,7 @@ public class MerlinAI implements ModInitializer {
 	//Object to be used in to represent a full but not complete object
 	public static final Object PLACEHOLDER_OBJECT = new Object();
 	public static final int PATHING_CHUNK_REMEMBERED_CHANGES = 16;
-	public static final int PATHING_CHUNK_CHANGES_BEFORE_RESET = 48;
+	public static final int PATHING_CHUNK_CHANGES_BEFORE_RESET = 96;
 	public static final String MOD_ID = "merlin_ai";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	public static boolean FROZEN = false;

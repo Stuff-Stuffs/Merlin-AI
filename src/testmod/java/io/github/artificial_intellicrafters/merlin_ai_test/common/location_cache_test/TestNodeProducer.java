@@ -49,12 +49,12 @@ public class TestNodeProducer implements NeighbourGetter<Entity, BasicAIPathNode
 	}
 
 	private BasicLocationType getLocationType(final int x, final int y, final int z, final ShapeCache shapeCache) {
-		return shapeCache.getLocationType(x, y, z, locationSetType);
+		return shapeCache.getLocationType(x, y, z, locationSetType, null);
 	}
 
 	@Override
 	public @Nullable BasicAIPathNode createStartNode(final ShapeCache cache, final int x, final int y, final int z) {
-		final BasicLocationType locationType = cache.getLocationType(x, y, z, locationSetType);
+		final BasicLocationType locationType = cache.getLocationType(x, y, z, locationSetType, null);
 		if (locationType == BasicLocationType.CLOSED) {
 			return null;
 		}

@@ -114,12 +114,11 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			modCounts = new long[27];
 			positions = new long[27];
 			regionsModCounts = new long[27];
-			final long packed = pos.asLong();
 			for (int x = -1; x <= 1; x++) {
 				for (int y = -1; y <= 1; y++) {
 					for (int z = -1; z <= 1; z++) {
 						final int index = ValidLocationAnalysisChunkSectionAITTask.index(x, y, z);
-						positions[index] = ChunkSectionPos.offset(packed, x, y, z);
+						positions[index] = pos.add(x, y, z).asLong();
 						modCounts[index] = -1;
 					}
 				}
@@ -155,9 +154,9 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 							modCounts[i] = section.merlin_ai$getModCount();
 						}
 					}
-					if ((section == null && modCounts[i] > 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
+					if ((section == null && modCounts[i] >= 0) || (section != null && modCounts[i] != section.merlin_ai$getModCount())) {
 						if (section == null) {
-							modCounts[i] = 0;
+							modCounts[i] = -1;
 						} else {
 							modCounts[i] = section.merlin_ai$getModCount();
 						}
@@ -167,6 +166,8 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				if (!modPassing) {
 					final Object set = locationSetCache.get(type);
 					locationSetCache.clear();
+					regionsCache.clear();
+					graphCache.clear();
 					enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSetImpl<T>) set, executionContext);
 					return null;
 				}
@@ -216,7 +217,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
 			final long[] newOldModCounts = Arrays.copyOf(regionsModCounts, regionsModCounts.length);
 			final BooleanSupplier matcher = () -> compatible(newOldModCounts, regionsModCounts);
-			final ChunkSectionRegionsAnalysisAITask<?, ?, ?> task = new ChunkSectionRegionsAnalysisAITask<>(info, () -> ShapeCache.create(world, minCachePos, maxCachePos, executionContext), matcher, pos, world, pair -> regionsCache.put(info, pair), () -> {
+			final ChunkSectionRegionsAnalysisAITask<?, ?, ?> task = new ChunkSectionRegionsAnalysisAITask<>(info, () -> ShapeCache.create(world, minCachePos, maxCachePos), matcher, pos, world, pair -> regionsCache.put(info, pair), () -> {
 				if (regionsCache.get(info) == MerlinAI.PLACEHOLDER_OBJECT) {
 					regionsCache.remove(info);
 				}
@@ -288,7 +289,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			final ChunkSectionRegionLinkingAITask<N, C, ?> task = new ChunkSectionRegionLinkingAITask<>(info, () -> {
 				final var a = getRegionPrecomputedPair(info, world.getTime(), executionContext);
 				return a == null ? null : Optional.ofNullable(a.getSecond());
-			}, () -> getRegions(info, world.getTime(), executionContext), () -> ShapeCache.create(world, minCachePos, maxCachePos, executionContext), matcher, pos, pair -> graphCache.put(info, pair), () -> {
+			}, () -> getRegions(info, world.getTime(), executionContext), () -> ShapeCache.create(world, minCachePos, maxCachePos), matcher, pos, pair -> graphCache.put(info, pair), () -> {
 				if (graphCache.get(info) == MerlinAI.PLACEHOLDER_OBJECT) {
 					graphCache.remove(info);
 				}
@@ -314,12 +315,12 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			if (type.columnar()) {
 				newOldModCounts = toColumnar(modCounts);
 				oldModCounts = toColumnar(oldModCounts);
-				matcher = () -> compatible(newOldModCounts, new long[]{modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)], modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)], modCounts[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)]});
+				matcher = () -> compatible(newOldModCounts, toColumnar(modCounts));
 			} else {
 				newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
 				matcher = () -> compatible(newOldModCounts, modCounts);
 			}
-			final ValidLocationAnalysisChunkSectionAITTask<T> task = new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos, executionContext), locationSet -> locationSetCache.put(type, locationSet), () -> {
+			final ValidLocationAnalysisChunkSectionAITTask<T> task = new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> locationSetCache.put(type, locationSet), () -> {
 				if (locationSetCache.get(type) == MerlinAI.PLACEHOLDER_OBJECT) {
 					locationSetCache.remove(type);
 				}
