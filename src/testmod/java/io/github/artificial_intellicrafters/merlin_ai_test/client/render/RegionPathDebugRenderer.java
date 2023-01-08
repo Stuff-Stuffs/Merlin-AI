@@ -34,8 +34,8 @@ public final class RegionPathDebugRenderer extends AbstractDebugRenderer {
 	private BlockPos start = null;
 	private AStar.PathInfo<CoarseUtil.RegionInfo> lastPath = null;
 
-	public RegionPathDebugRenderer(final KeyBind bind, final int time) {
-		super(bind, time);
+	public RegionPathDebugRenderer(final KeyBind bind) {
+		super(bind);
 	}
 
 	@Override
@@ -95,8 +95,9 @@ public final class RegionPathDebugRenderer extends AbstractDebugRenderer {
 					entry.getValue().forEachEdge((i, j, k, l, m, n) -> {
 						final Vec3d start = new Vec3d(i, j, k);
 						final Vec3d end = new Vec3d(l, m, n);
-						buffer.vertex((float) start.x, (float) start.y, (float) start.z).color(color).normal(0, 1, 0).next();
-						buffer.vertex((float) end.x, (float) end.y, (float) end.z).color(color).normal(0, 1, 0).next();
+						final Vec3d delta = end.subtract(start);
+						buffer.vertex((float) start.x, (float) start.y, (float) start.z).color(color).normal((float) delta.x, (float) delta.y, (float) delta.z).next();
+						buffer.vertex((float) end.x, (float) end.y, (float) end.z).color(color).normal((float) -delta.x, (float) -delta.y, (float) -delta.z).next();
 					}, true);
 				}, () -> vec));
 			}

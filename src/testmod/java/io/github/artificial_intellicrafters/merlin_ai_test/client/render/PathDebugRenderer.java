@@ -16,8 +16,8 @@ import org.joml.Vector3f;
 public final class PathDebugRenderer extends AbstractDebugRenderer {
 	private AIPath<Entity, BasicAIPathNode> lastPath = null;
 
-	public PathDebugRenderer(final KeyBind bind, final int time) {
-		super(bind, time);
+	public PathDebugRenderer(final KeyBind bind) {
+		super(bind);
 	}
 
 	@Override

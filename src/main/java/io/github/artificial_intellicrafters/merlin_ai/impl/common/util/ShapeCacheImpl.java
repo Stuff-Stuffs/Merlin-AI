@@ -2,16 +2,11 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
 import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
-import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
-import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
-import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
-import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.hierarchy.ChunkSectionRegionsImpl;
 import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -36,8 +31,8 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private final BlockState[] blockStates;
 	private final VoxelShape[] collisionShapes;
 	private final int smallCacheMask;
-	private final long[] locationKeys;
-	private final ChunkRegionGraph.Entry[] locationSets;
+	private final long[] entryKeys;
+	private final ChunkRegionGraph.Entry[] entries;
 
 	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
@@ -48,9 +43,9 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		Arrays.fill(keys, DEFAULT_KEY);
 		final int smallCacheSize = Math.max(cacheSize / 4, 16);
 		smallCacheMask = smallCacheSize - 1;
-		locationKeys = new long[smallCacheSize];
-		locationSets = new ChunkRegionGraph.Entry[smallCacheSize];
-		Arrays.fill(locationKeys, DEFAULT_KEY);
+		entryKeys = new long[smallCacheSize];
+		entries = new ChunkRegionGraph.Entry[smallCacheSize];
+		Arrays.fill(entryKeys, DEFAULT_KEY);
 	}
 
 	@Override
@@ -85,22 +80,22 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public boolean doesLocationSetExist(final int x, final int y, final int z, final ValidLocationSetType<?> type, @Nullable AITaskExecutionContext executionContext) {
+	public boolean doesLocationSetExist(final int x, final int y, final int z, final ValidLocationSetType<?> type, @Nullable final AITaskExecutionContext executionContext) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
-		if (locationKeys[pos] == idx) {
-			final ValidLocationSet<?> set = locationSets[pos] == null ? null : locationSets[pos].getValidLocationSet(type, world.getTime(), executionContext);
+		if (entryKeys[pos] == idx) {
+			final ValidLocationSet<?> set = entries[pos] == null ? null : entries[pos].getValidLocationSet(type, world.getTime(), executionContext, false);
 			return set != null;
 		}
 		populateCacheSmall(x, y, z, idx, pos);
-		final ValidLocationSet<?> set = locationSets[pos] == null ? null : locationSets[pos].getValidLocationSet(type, world.getTime(), executionContext);
+		final ValidLocationSet<?> set = entries[pos] == null ? null : entries[pos].getValidLocationSet(type, world.getTime(), executionContext, false);
 		return set != null;
 	}
 
 	private void populateCacheSmall(final int x, final int y, final int z, final long idx, final int pos) {
 		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
-		locationKeys[pos] = idx;
-		locationSets[pos] = entry;
+		entryKeys[pos] = idx;
+		entries[pos] = entry;
 	}
 
 	private void populateCache(final int x, final int y, final int z, final long idx, final int pos) {
@@ -154,52 +149,14 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public @Nullable <T> ValidLocationSet<T> getLocationSetType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType, @Nullable AITaskExecutionContext executionContext) {
+	public ChunkRegionGraph.Entry getEntry(final int x, final int y, final int z) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
-		if (locationKeys[pos] == idx) {
-			return locationSets[pos] == null ? null : locationSets[pos].getValidLocationSet(validLocationSetType, world.getTime(), executionContext);
+		if (entryKeys[pos] == idx) {
+			return entries[pos];
 		}
 		populateCacheSmall(x, y, z, idx, pos);
-		return locationSets[pos] == null ? null : locationSets[pos].getValidLocationSet(validLocationSetType, world.getTime(), executionContext);
-	}
-
-	@Override
-	public @Nullable ChunkSectionRegions getRegions(final int x, final int y, final int z, final HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
-		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
-		final int pos = (int) (idx) & smallCacheMask;
-		if (locationKeys[pos] == idx) {
-			return locationSets[pos] == null ? null : locationSets[pos].getRegions(info, world.getTime(), executionContext);
-		}
-		populateCacheSmall(x, y, z, idx, pos);
-		return locationSets[pos] == null ? null : locationSets[pos].getRegions(info, world.getTime(), executionContext);
-	}
-
-	@Override
-	public @Nullable <N> ChunkSectionRegionConnectivityGraph<N> getGraph(final int x, final int y, final int z, final HierarchyInfo<?, N, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
-		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
-		final int pos = (int) (idx) & smallCacheMask;
-		if (locationKeys[pos] == idx) {
-			return locationSets[pos] == null ? null : locationSets[pos].getGraph(info, world.getTime(), executionContext);
-		}
-		populateCacheSmall(x, y, z, idx, pos);
-		return locationSets[pos] == null ? null : locationSets[pos].getGraph(info, world.getTime(), executionContext);
-	}
-
-	@Override
-	public @Nullable ChunkSectionRegion getRegion(final long key, final HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
-		final int x = ChunkSectionRegionsImpl.unpackChunkSectionPosX(key);
-		final int y = ChunkSectionRegionsImpl.unpackChunkSectionPosY(key, world);
-		final int z = ChunkSectionRegionsImpl.unpackChunkSectionPosZ(key);
-		final long idx = HashCommon.mix(BlockPos.asLong(x, y, z));
-		final int pos = (int) (idx) & smallCacheMask;
-		if (locationKeys[pos] == idx) {
-			final ChunkSectionRegions region = locationSets[pos] == null ? null : locationSets[pos].getRegions(info, world.getTime(), executionContext);
-			return region == null ? null : region.byId(key);
-		}
-		populateCacheSmall(x<<4, y<<4, z<<4, idx, pos);
-		final ChunkSectionRegions region = locationSets[pos] == null ? null : locationSets[pos].getRegions(info, world.getTime(), executionContext);
-		return region == null ? null : region.byId(key);
+		return entries[pos];
 	}
 
 	@Override

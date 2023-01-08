@@ -10,7 +10,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.ValidLocationSetImpl;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.sets.DenseValidLocationSetImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkSectionRegionLinkingAITask;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkSectionRegionsAnalysisAITask;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
@@ -62,7 +62,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 
 	@Override
 	public @Nullable EntryImpl getEntry(final int x, final int y, final int z) {
-		return getEntry(ChunkSectionPos.from(new BlockPos(x, y, z)).asLong());
+		return getEntry(ChunkSectionPos.asLong(x >> 4, y >> 4, z >> 4));
 	}
 
 	public EntryImpl getEntry(final long pos) {
@@ -127,7 +127,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type, final long tick, @Nullable final AITaskExecutionContext executionContext) {
+		public @Nullable <T> ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type, final long tick, @Nullable final AITaskExecutionContext executionContext, final boolean enqueue) {
 			boolean modPassing = true;
 			if (lastTickAccessed != tick) {
 				lastTickAccessed = tick;
@@ -164,18 +164,21 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 					}
 				}
 				if (!modPassing) {
+					if (!enqueue) {
+						return null;
+					}
 					final Object set = locationSetCache.get(type);
 					locationSetCache.clear();
 					regionsCache.clear();
 					graphCache.clear();
-					enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSetImpl<T>) set, executionContext);
+					enqueueLocationSet(oldModCounts, type, set == MerlinAI.PLACEHOLDER_OBJECT ? null : (ValidLocationSet<T>) set, executionContext);
 					return null;
 				}
 				final Object set = locationSetCache.get(type);
 				if (set == MerlinAI.PLACEHOLDER_OBJECT) {
 					return null;
 				}
-				if (set == null) {
+				if (set == null && enqueue) {
 					enqueueLocationSet(modCounts, type, null, executionContext);
 				}
 				return (ValidLocationSet<T>) set;
@@ -184,15 +187,17 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			if (set == MerlinAI.PLACEHOLDER_OBJECT) {
 				return null;
 			}
-			if (set == null) {
+			if (set == null && enqueue) {
 				enqueueLocationSet(modCounts, type, null, executionContext);
 			}
 			return (ValidLocationSet<T>) set;
 		}
 
-		private <T, N, C> @Nullable Pair<ChunkSectionRegions, C> getRegionPrecomputedPair(final HierarchyInfo<T, N, C, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext) {
+		private <T, N, C> @Nullable Pair<ChunkSectionRegions, C> getRegionPrecomputedPair(final HierarchyInfo<T, N, C, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext, final boolean enqueue) {
 			if (!checkRegionValidity(info.validLocationSetType(), tick, executionContext)) {
-				enqueueRegions(info, executionContext);
+				if (enqueue) {
+					enqueueRegions(info, executionContext);
+				}
 				return null;
 			}
 			final Object set = regionsCache.get(info);
@@ -206,8 +211,8 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public @Nullable ChunkSectionRegions getRegions(final HierarchyInfo<?, ?, ?, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext) {
-			final Pair<ChunkSectionRegions, ?> pair = getRegionPrecomputedPair(info, tick, executionContext);
+		public @Nullable ChunkSectionRegions getRegions(final HierarchyInfo<?, ?, ?, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext, final boolean enqueue) {
+			final Pair<ChunkSectionRegions, ?> pair = getRegionPrecomputedPair(info, tick, executionContext, enqueue);
 			return pair == null ? null : pair.getFirst();
 		}
 
@@ -266,8 +271,8 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 		}
 
 		@Override
-		public <N> ChunkSectionRegionConnectivityGraph<N> getGraph(final HierarchyInfo<?, N, ?, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext) {
-			if (!checkRegionValidity(info.validLocationSetType(), tick, executionContext)) {
+		public <N> ChunkSectionRegionConnectivityGraph<N> getGraph(final HierarchyInfo<?, N, ?, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext, final boolean enqueue) {
+			if (enqueue && !checkRegionValidity(info.validLocationSetType(), tick, executionContext)) {
 				enqueueGraph(info, executionContext);
 			}
 			final Object set = graphCache.get(info);
@@ -287,7 +292,7 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			final long[] newOldModCounts = Arrays.copyOf(regionsModCounts, regionsModCounts.length);
 			final BooleanSupplier matcher = () -> compatible(newOldModCounts, regionsModCounts);
 			final ChunkSectionRegionLinkingAITask<N, C, ?> task = new ChunkSectionRegionLinkingAITask<>(info, () -> {
-				final var a = getRegionPrecomputedPair(info, world.getTime(), executionContext);
+				final var a = getRegionPrecomputedPair(info, world.getTime(), executionContext, true);
 				return a == null ? null : Optional.ofNullable(a.getSecond());
 			}, () -> getRegions(info, world.getTime(), executionContext), () -> ShapeCache.create(world, minCachePos, maxCachePos), matcher, pos, pair -> graphCache.put(info, pair), () -> {
 				if (graphCache.get(info) == MerlinAI.PLACEHOLDER_OBJECT) {
@@ -306,20 +311,14 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 			}
 		}
 
-		private <T> void enqueueLocationSet(long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSetImpl<T> previous, @Nullable final AITaskExecutionContext executionContext) {
+		private <T> void enqueueLocationSet(final long[] oldModCounts, final ValidLocationSetType<T> type, @Nullable final ValidLocationSet<T> previous, @Nullable final AITaskExecutionContext executionContext) {
 			final BlockPos blockPos = pos.getMinPos();
 			final BlockPos minCachePos = blockPos.add(-16, -16, -16);
 			final BlockPos maxCachePos = blockPos.add(16, 16, 16);
 			final long[] newOldModCounts;
 			final BooleanSupplier matcher;
-			if (type.columnar()) {
-				newOldModCounts = toColumnar(modCounts);
-				oldModCounts = toColumnar(oldModCounts);
-				matcher = () -> compatible(newOldModCounts, toColumnar(modCounts));
-			} else {
-				newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
-				matcher = () -> compatible(newOldModCounts, modCounts);
-			}
+			newOldModCounts = Arrays.copyOf(modCounts, modCounts.length);
+			matcher = () -> compatible(newOldModCounts, modCounts);
 			final ValidLocationAnalysisChunkSectionAITTask<T> task = new ValidLocationAnalysisChunkSectionAITTask<>(matcher, oldModCounts, previous, type, pos, () -> ShapeCache.create(world, minCachePos, maxCachePos), locationSet -> locationSetCache.put(type, locationSet), () -> {
 				if (locationSetCache.get(type) == MerlinAI.PLACEHOLDER_OBJECT) {
 					locationSetCache.remove(type);
@@ -344,14 +343,6 @@ public class ChunkRegionGraphImpl implements ChunkRegionGraph {
 				}
 			}
 			return true;
-		}
-
-		private long[] toColumnar(final long[] data) {
-			final long[] columnarData = new long[3];
-			columnarData[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(-1)] = data[ValidLocationAnalysisChunkSectionAITTask.index(0, -1, 0)];
-			columnarData[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(0)] = data[ValidLocationAnalysisChunkSectionAITTask.index(0, 0, 0)];
-			columnarData[ValidLocationAnalysisChunkSectionAITTask.indexColumnar(1)] = data[ValidLocationAnalysisChunkSectionAITTask.index(0, 1, 0)];
-			return columnarData;
 		}
 	}
 }

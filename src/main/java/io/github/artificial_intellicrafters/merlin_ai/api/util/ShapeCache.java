@@ -1,5 +1,6 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
@@ -8,6 +9,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
+import io.github.artificial_intellicrafters.merlin_ai.impl.common.hierarchy.ChunkSectionRegionsImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.util.ShapeCacheImpl;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
@@ -31,13 +33,38 @@ public interface ShapeCache extends BlockView {
 		return getLocationType(pos.getX(), pos.getY(), pos.getZ(), validLocationSetType, executionContext);
 	}
 
-	<T> @Nullable ValidLocationSet<T> getLocationSetType(int x, int y, int z, ValidLocationSetType<T> validLocationSetType, @Nullable AITaskExecutionContext executionContext);
+	ChunkRegionGraph.Entry getEntry(int x, int y, int z);
 
-	@Nullable ChunkSectionRegions getRegions(int x, int y, int z, HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext);
 
-	<N> @Nullable ChunkSectionRegionConnectivityGraph<N> getGraph(int x, int y, int z, HierarchyInfo<?, N, ?, ?> info, @Nullable AITaskExecutionContext executionContext);
+	default <T> @Nullable ValidLocationSet<T> getLocationSetType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType, @Nullable final AITaskExecutionContext executionContext) {
+		final ChunkRegionGraph.Entry entry = getEntry(x, y, z);
+		return entry == null ? null : entry.getValidLocationSet(validLocationSetType, getDelegate().getTime(), executionContext);
+	}
 
-	@Nullable ChunkSectionRegion getRegion(long key, HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext);
+	default @Nullable ChunkSectionRegions getRegions(int x, int y, int z, HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
+		final ChunkRegionGraph.Entry entry = getEntry(x, y, z);
+		return entry==null?null:entry.getRegions(info, getDelegate().getTime(), executionContext);
+	}
+
+	default <N> @Nullable ChunkSectionRegionConnectivityGraph<N> getGraph(int x, int y, int z, HierarchyInfo<?, N, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
+		final ChunkRegionGraph.Entry entry = getEntry(x, y, z);
+		return entry==null?null:entry.getGraph(info, getDelegate().getTime(), executionContext);
+	}
+
+	default @Nullable ChunkSectionRegion getRegion(long key, HierarchyInfo<?, ?, ?, ?> info, @Nullable AITaskExecutionContext executionContext) {
+		final int x = ChunkSectionRegionsImpl.unpackChunkSectionPosX(key)<<4;
+		final int y = ChunkSectionRegionsImpl.unpackChunkSectionPosY(key, this)<<4;
+		final int z = ChunkSectionRegionsImpl.unpackChunkSectionPosZ(key)<<4;
+		final ChunkRegionGraph.Entry entry = getEntry(x, y, z);
+		if(entry==null) {
+			return null;
+		}
+		final ChunkSectionRegions regions = entry.getRegions(info, getDelegate().getTime(), executionContext);
+		if(regions==null) {
+			return null;
+		}
+		return regions.byId(key);
+	}
 
 	default <T> T getLocationType(final int x, final int y, final int z, final ValidLocationSetType<T> validLocationSetType, @Nullable final AITaskExecutionContext executionContext) {
 		final ValidLocationSet<T> set = getLocationSetType(x, y, z, validLocationSetType, executionContext);

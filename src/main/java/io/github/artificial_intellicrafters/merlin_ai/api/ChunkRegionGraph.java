@@ -15,10 +15,22 @@ public interface ChunkRegionGraph {
 	@Nullable Entry getEntry(int x, int y, int z);
 
 	interface Entry {
-		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type, long tick, @Nullable AITaskExecutionContext executionContext);
+		default <T> @Nullable ValidLocationSet<T> getValidLocationSet(final ValidLocationSetType<T> type, final long tick, @Nullable final AITaskExecutionContext executionContext) {
+			return getValidLocationSet(type, tick, executionContext, true);
+		}
 
-		@Nullable ChunkSectionRegions getRegions(HierarchyInfo<?, ?, ?, ?> info, long tick, @Nullable AITaskExecutionContext executionContext);
+		<T> @Nullable ValidLocationSet<T> getValidLocationSet(ValidLocationSetType<T> type, long tick, @Nullable AITaskExecutionContext executionContext, boolean enqueue);
 
-		<N> ChunkSectionRegionConnectivityGraph<N> getGraph(HierarchyInfo<?, N, ?, ?> info, long tick, @Nullable AITaskExecutionContext executionContext);
+		default @Nullable ChunkSectionRegions getRegions(final HierarchyInfo<?, ?, ?, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext) {
+			return getRegions(info, tick, executionContext, true);
+		}
+
+		@Nullable ChunkSectionRegions getRegions(HierarchyInfo<?, ?, ?, ?> info, long tick, @Nullable AITaskExecutionContext executionContext, boolean enqueue);
+
+		default <N> @Nullable ChunkSectionRegionConnectivityGraph<N> getGraph(final HierarchyInfo<?, N, ?, ?> info, final long tick, @Nullable final AITaskExecutionContext executionContext) {
+			return getGraph(info, tick, executionContext, true);
+		}
+
+		<N> @Nullable ChunkSectionRegionConnectivityGraph<N> getGraph(HierarchyInfo<?, N, ?, ?> info, long tick, @Nullable AITaskExecutionContext executionContext, boolean enqueue);
 	}
 }

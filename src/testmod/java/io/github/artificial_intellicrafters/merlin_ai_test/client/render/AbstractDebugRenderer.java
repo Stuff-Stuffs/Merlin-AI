@@ -5,37 +5,24 @@ import net.minecraft.client.option.KeyBind;
 
 public abstract class AbstractDebugRenderer {
 	private final KeyBind keyBind;
-	private final int timeOnPress;
-	private int timeRemaining;
+	private boolean enabled;
 
-	protected AbstractDebugRenderer(final KeyBind bind, final int press) {
+	protected AbstractDebugRenderer(final KeyBind bind) {
 		keyBind = bind;
-		timeOnPress = press;
 	}
 
-	public void tick() {
-		if (timeRemaining > 0) {
-			timeRemaining--;
-			if (timeRemaining == 0) {
-				clearState();
-			} else {
-				renderTick();
-			}
-		}
+	public final void tick() {
 		if (keyBind.wasPressed()) {
-			if (timeRemaining > 0) {
-				timeRemaining = 0;
-				clearState();
-			} else {
-				timeRemaining = timeOnPress;
-				clearState();
+			enabled = !enabled;
+			clearState();
+			if(enabled) {
 				setup();
 			}
 		}
 	}
 
-	public void render(final WorldRenderContext context) {
-		if (timeRemaining > 0) {
+	public final void render(final WorldRenderContext context) {
+		if (enabled) {
 			renderDebug(context);
 		}
 	}

@@ -24,8 +24,8 @@ public final class NearbyRegionDebugRenderer extends AbstractDebugRenderer {
 	private final Long2ObjectMap<BakeableDebugRenderers.Key> keys;
 	private ChunkSectionPos lastPos = null;
 
-	public NearbyRegionDebugRenderer(final KeyBind bind, final int time) {
-		super(bind, time);
+	public NearbyRegionDebugRenderer(final KeyBind bind) {
+		super(bind);
 		keys = new Long2ObjectOpenHashMap<>();
 	}
 

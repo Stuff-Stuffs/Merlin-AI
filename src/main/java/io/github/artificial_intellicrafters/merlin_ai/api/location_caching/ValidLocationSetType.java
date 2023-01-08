@@ -10,6 +10,4 @@ public interface ValidLocationSetType<T> {
 	ValidLocationClassifier<T> classifier();
 
 	Class<T> typeClass();
-
-	boolean columnar();
 }

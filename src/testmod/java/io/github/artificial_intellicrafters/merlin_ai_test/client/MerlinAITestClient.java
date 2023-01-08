@@ -38,10 +38,10 @@ public class MerlinAITestClient implements ClientModInitializer {
 			BakeableDebugRenderers.tick(stack.peek().getModel(), context.projectionMatrix());
 			stack.pop();
 		});
-		renderDebugRenderer(new PathDebugRenderer(PATH_KEYBIND, 20 * 60));
-		renderDebugRenderer(new NearbyRegionDebugRenderer(REGION_KEYBIND, 20 * 60));
+		renderDebugRenderer(new PathDebugRenderer(PATH_KEYBIND));
+		renderDebugRenderer(new NearbyRegionDebugRenderer(REGION_KEYBIND));
 		renderDebugRenderer(new AdjacentRegionsDebugRenderer(LINK_KEYBIND, 20 * 15));
-		renderDebugRenderer(new RegionPathDebugRenderer(REGION_PATH_KEYBIND, 20 * 150));
+		renderDebugRenderer(new RegionPathDebugRenderer(REGION_PATH_KEYBIND));
 	}
 
 	public static void renderDebugRenderer(final AbstractDebugRenderer renderer) {

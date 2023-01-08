@@ -19,7 +19,7 @@ public final class ValidLocationSetTypeRegistryImpl implements ValidLocationSetT
 
 	@Override
 	public <T> void register(final UniverseInfo<T> universeInfo, final ValidLocationClassifier<T> classifier, final Class<T> typeClass, boolean columnar, final Identifier id) {
-		if (registry.put(id, new ValidLocationSetTypeImpl<>(universeInfo, classifier, typeClass, columnar)) != null) {
+		if (registry.put(id, new ValidLocationSetTypeImpl<>(universeInfo, classifier, typeClass)) != null) {
 			throw new RuntimeException("Duplicate ValidLocationSetTypes");
 		}
 	}

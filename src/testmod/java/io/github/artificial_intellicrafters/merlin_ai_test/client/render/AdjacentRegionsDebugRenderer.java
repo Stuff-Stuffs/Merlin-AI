@@ -24,7 +24,7 @@ public final class AdjacentRegionsDebugRenderer extends AbstractDebugRenderer {
 	private BlockPos pos = null;
 
 	public AdjacentRegionsDebugRenderer(final KeyBind bind, final int time) {
-		super(bind, time);
+		super(bind);
 	}
 
 	@Override

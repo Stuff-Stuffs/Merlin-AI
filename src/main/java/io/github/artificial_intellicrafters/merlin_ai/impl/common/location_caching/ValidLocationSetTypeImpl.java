@@ -8,13 +8,11 @@ public final class ValidLocationSetTypeImpl<T> implements ValidLocationSetType<T
 	private final UniverseInfo<T> universeInfo;
 	private final ValidLocationClassifier<T> classifier;
 	private final Class<T> typeClass;
-	private final boolean columnar;
 
-	public ValidLocationSetTypeImpl(final UniverseInfo<T> universeInfo, final ValidLocationClassifier<T> classifier, final Class<T> typeClass, boolean columnar) {
+	public ValidLocationSetTypeImpl(final UniverseInfo<T> universeInfo, final ValidLocationClassifier<T> classifier, final Class<T> typeClass) {
 		this.universeInfo = universeInfo;
 		this.classifier = classifier;
 		this.typeClass = typeClass;
-		this.columnar = columnar;
 	}
 
 	@Override
@@ -30,10 +28,5 @@ public final class ValidLocationSetTypeImpl<T> implements ValidLocationSetType<T
 	@Override
 	public Class<T> typeClass() {
 		return typeClass;
-	}
-
-	@Override
-	public boolean columnar() {
-		return columnar;
 	}
 }
