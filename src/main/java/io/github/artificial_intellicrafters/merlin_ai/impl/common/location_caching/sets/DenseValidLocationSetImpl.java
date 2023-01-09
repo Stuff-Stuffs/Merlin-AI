@@ -118,18 +118,18 @@ public final class DenseValidLocationSetImpl<T> implements ValidLocationSet<T> {
 				}
 			}
 		}
-		final T[] unpacked = (T[]) Array.newInstance(type.typeClass(), 16 * 16 * 16);
-		final int[] counts = new int[universeInfo.getUniverseSize()];
-		for (int i = 0; i < 16; i++) {
-			for (int j = 0; j < 16; j++) {
-				for (int k = 0; k < 16; k++) {
-					final T val = get(i, j, k);
-					unpacked[ValidLocationAnalysisChunkSectionAITTask.dataIndex(i, j, k)] = val;
-					counts[universeInfo.toInt(val)]++;
+		if (modified[0]) {
+			final T[] unpacked = (T[]) Array.newInstance(type.typeClass(), 16 * 16 * 16);
+			final int[] counts = new int[universeInfo.getUniverseSize()];
+			for (int i = 0; i < 16; i++) {
+				for (int j = 0; j < 16; j++) {
+					for (int k = 0; k < 16; k++) {
+						final T val = get(i, j, k);
+						unpacked[ValidLocationAnalysisChunkSectionAITTask.dataIndex(i, j, k)] = val;
+						counts[universeInfo.toInt(val)]++;
+					}
 				}
 			}
-		}
-		if (modified[0]) {
 			return Either.right(Pair.of(unpacked, counts));
 		} else {
 			return Either.left(this);
