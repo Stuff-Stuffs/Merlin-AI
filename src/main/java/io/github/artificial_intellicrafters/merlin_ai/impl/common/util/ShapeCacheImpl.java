@@ -1,7 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai.impl.common.util;
 
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
-import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkPathingInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSet;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
@@ -32,7 +32,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	private final VoxelShape[] collisionShapes;
 	private final int smallCacheMask;
 	private final long[] entryKeys;
-	private final ChunkRegionGraph.Entry[] entries;
+	private final ChunkPathingInfo.Entry[] entries;
 
 	public ShapeCacheImpl(final World world, final BlockPos minPos, final BlockPos maxPos, final int cacheSize) {
 		super(world, minPos, maxPos);
@@ -44,7 +44,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 		final int smallCacheSize = Math.max(cacheSize / 4, 16);
 		smallCacheMask = smallCacheSize - 1;
 		entryKeys = new long[smallCacheSize];
-		entries = new ChunkRegionGraph.Entry[smallCacheSize];
+		entries = new ChunkPathingInfo.Entry[smallCacheSize];
 		Arrays.fill(entryKeys, DEFAULT_KEY);
 	}
 
@@ -93,7 +93,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	private void populateCacheSmall(final int x, final int y, final int z, final long idx, final int pos) {
-		final ChunkRegionGraph.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
+		final ChunkPathingInfo.Entry entry = ((AIWorld) world).merlin_ai$getChunkGraph().getEntry(x, y, z);
 		entryKeys[pos] = idx;
 		entries[pos] = entry;
 	}
@@ -149,7 +149,7 @@ public class ShapeCacheImpl extends ChunkCache implements ShapeCache {
 	}
 
 	@Override
-	public ChunkRegionGraph.Entry getEntry(final int x, final int y, final int z) {
+	public ChunkPathingInfo.Entry getEntry(final int x, final int y, final int z) {
 		final long idx = HashCommon.mix(BlockPos.asLong(x >> 4, y >> 4, z >> 4));
 		final int pos = (int) (idx) & smallCacheMask;
 		if (entryKeys[pos] == idx) {

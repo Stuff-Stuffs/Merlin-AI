@@ -16,6 +16,8 @@ import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_cachi
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.chunk.ChunkSection;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.util.function.BooleanSupplier;
@@ -24,6 +26,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ValidLocationAnalysisChunkSectionAITTask.class);
 	private static final ValidLocationSetFactory[] FACTORIES;
 	private final BooleanSupplier shouldContinue;
 	private final long[] currentModCounts;
@@ -181,6 +184,11 @@ public class ValidLocationAnalysisChunkSectionAITTask<T> implements AITask {
 	@Override
 	public void cancel() {
 		cancel.run();
+	}
+
+	@Override
+	public Logger logger() {
+		return LOGGER;
 	}
 
 	public interface ValidLocationSetFactory {

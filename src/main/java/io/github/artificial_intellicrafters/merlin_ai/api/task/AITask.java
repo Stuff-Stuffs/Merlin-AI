@@ -1,5 +1,7 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.task;
 
+import org.slf4j.Logger;
+
 public interface AITask {
 	boolean done();
 
@@ -14,4 +16,6 @@ public interface AITask {
 	void runFinish();
 
 	void cancel();
+
+	Logger logger();
 }

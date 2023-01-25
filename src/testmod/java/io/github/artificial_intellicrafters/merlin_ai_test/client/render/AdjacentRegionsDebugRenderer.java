@@ -67,8 +67,8 @@ public final class AdjacentRegionsDebugRenderer extends AbstractDebugRenderer {
 					set.forEachEdge((i, j, k, l, m, n) -> {
 						final Vec3d start = new Vec3d(i, j, k);
 						final Vec3d end = new Vec3d(l, m, n);
-						buffer.m_rkxaaknb(matrices.peek().getModel(), (float) start.x + ox, (float) start.y + oy, (float) start.z + oz).color(color).normal(0, 1, 0).next();
-						buffer.m_rkxaaknb(matrices.peek().getModel(), (float) end.x + ox, (float) end.y + oy, (float) end.z + oz).color(color).normal(0, 1, 0).next();
+						buffer.vertex(matrices.peek().getModel(), (float) start.x + ox, (float) start.y + oy, (float) start.z + oz).color(color).normal(0, 1, 0).next();
+						buffer.vertex(matrices.peek().getModel(), (float) end.x + ox, (float) end.y + oy, (float) end.z + oz).color(color).normal(0, 1, 0).next();
 					}, true);
 					matrices.pop();
 				}

@@ -12,6 +12,27 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.ToDoubleFunction;
 
 public final class CoarseUtil {
+
+	public static AStar.PathInfo<RegionInfo> findPathDynamicHeuristic(final ChunkSectionRegion start, final ShapeCache cache, final ToDoubleFunction<BlockPos> heuristic, final RegionHeuristic regionHeuristic, final double error, final double maxCost, final boolean partial, final HierarchyInfo<?, ?, ?, ?> hierarchyInfo) {
+		final ToDoubleFunction<RegionInfo> heuristicMapped = value -> {
+			final long id = value.region().id();
+			final ChunkSectionRegion region = cache.getRegion(id, hierarchyInfo, null);
+			if (region != null) {
+				final int sx = ChunkSectionRegionsImpl.unpackChunkSectionPosX(id);
+				final int sy = ChunkSectionRegionsImpl.unpackChunkSectionPosY(id, cache);
+				final int sz = ChunkSectionRegionsImpl.unpackChunkSectionPosZ(id);
+				regionHeuristic.setup(sx, sy, sz);
+				for (final short repr : region.all()) {
+					if (regionHeuristic.add(repr)) {
+						break;
+					}
+				}
+				return regionHeuristic.calculate();
+			}
+			return Double.POSITIVE_INFINITY;
+		};
+		return findPath(start, cache, heuristicMapped, error, maxCost, partial, hierarchyInfo);
+	}
 	public static AStar.PathInfo<RegionInfo> findPath(final ChunkSectionRegion start, final ShapeCache cache, final RegionHeuristic regionHeuristic, final double error, final double maxCost, final boolean partial, final HierarchyInfo<?, ?, ?, ?> hierarchyInfo) {
 		final ToDoubleFunction<RegionInfo> heuristicMapped = value -> {
 			final long id = value.region().id();

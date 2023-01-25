@@ -9,7 +9,7 @@ import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionCo
 import net.minecraft.util.math.ChunkSectionPos;
 import org.jetbrains.annotations.Nullable;
 
-public interface ChunkRegionGraph {
+public interface ChunkPathingInfo {
 	@Nullable Entry getEntry(ChunkSectionPos pos);
 
 	@Nullable Entry getEntry(int x, int y, int z);

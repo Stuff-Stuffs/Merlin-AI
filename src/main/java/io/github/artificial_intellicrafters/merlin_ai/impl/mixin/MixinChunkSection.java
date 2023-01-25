@@ -59,8 +59,10 @@ public class MixinChunkSection implements PathingChunkSection {
 		}
 		final int startIndex = lastModCount == -1 ? 0 : ((int) lastModCount) % MerlinAI.PATHING_CHUNK_REMEMBERED_CHANGES;
 		final int endIndex = ((int) modCount) % MerlinAI.PATHING_CHUNK_REMEMBERED_CHANGES;
-		PathingChunkSection.wrappingCopy(updatedStates, startIndex, endIndex, updateStateArray, updateStateArrayIndex);
-		PathingChunkSection.wrappingCopy(updatedPositions, startIndex, endIndex, updatePosArray, updatePosArrayIndex);
+		if (startIndex != endIndex) {
+			PathingChunkSection.wrappingCopy(updatedStates, startIndex, endIndex, updateStateArray, updateStateArrayIndex);
+			PathingChunkSection.wrappingCopy(updatedPositions, startIndex, endIndex, updatePosArray, updatePosArrayIndex);
+		}
 		return true;
 	}
 }

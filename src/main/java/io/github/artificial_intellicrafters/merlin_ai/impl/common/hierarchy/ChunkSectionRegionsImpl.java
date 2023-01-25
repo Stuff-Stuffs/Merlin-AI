@@ -131,10 +131,9 @@ public class ChunkSectionRegionsImpl implements ChunkSectionRegions {
 
 		@Override
 		public void expand(final RegionKey key, final short pos) {
-			if (contains(pos)) {
+			if (!set.add(pos)) {
 				throw new RuntimeException();
 			} else {
-				set.add(pos);
 				final RegionKeyImpl regionKey = (RegionKeyImpl) key;
 				if (regionKey.parent != this) {
 					throw new RuntimeException();

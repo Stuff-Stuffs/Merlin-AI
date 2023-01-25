@@ -2,7 +2,7 @@ package io.github.artificial_intellicrafters.merlin_ai_test.client.render;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
-import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkPathingInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSection;
@@ -40,7 +40,7 @@ public final class NearbyRegionDebugRenderer extends AbstractDebugRenderer {
 				for (int offY = -1; offY <= 1; offY++) {
 					for (int offZ = -1; offZ <= 1; offZ++) {
 						final ChunkSectionPos sectionPos = lastPos.add(offX, offY, offZ);
-						final ChunkRegionGraph.Entry e = ((AIWorld) client.world).merlin_ai$getChunkGraph().getEntry(sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
+						final ChunkPathingInfo.Entry e = ((AIWorld) client.world).merlin_ai$getChunkGraph().getEntry(sectionPos.getMinX(), sectionPos.getMinY(), sectionPos.getMinZ());
 						final ChunkSectionRegions lastRegions = e == null ? null : e.getRegions(LocationCacheTest.HIERARCHY_INFO, client.world.getTime(), null);
 						final long chunkKey = sectionPos.asLong();
 						final boolean b = keys.containsKey(chunkKey);

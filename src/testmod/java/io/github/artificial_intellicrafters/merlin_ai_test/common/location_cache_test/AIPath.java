@@ -1,7 +1,5 @@
 package io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.path.AIPathNode;
-
 import java.util.List;
 
 public final class AIPath<T, N extends AIPathNode<T, N>> {

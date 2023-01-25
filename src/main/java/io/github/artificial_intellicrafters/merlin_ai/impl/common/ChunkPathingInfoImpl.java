@@ -2,7 +2,7 @@ package io.github.artificial_intellicrafters.merlin_ai.impl.common;
 
 import com.mojang.datafixers.util.Pair;
 import io.github.artificial_intellicrafters.merlin_ai.api.AIWorld;
-import io.github.artificial_intellicrafters.merlin_ai.api.ChunkRegionGraph;
+import io.github.artificial_intellicrafters.merlin_ai.api.ChunkPathingInfo;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegionConnectivityGraph;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegions;
 import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo;
@@ -10,7 +10,6 @@ import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.Valid
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
-import io.github.artificial_intellicrafters.merlin_ai.impl.common.location_caching.sets.DenseValidLocationSetImpl;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkSectionRegionLinkingAITask;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ChunkSectionRegionsAnalysisAITask;
 import io.github.artificial_intellicrafters.merlin_ai.impl.common.task.ValidLocationAnalysisChunkSectionAITTask;
@@ -30,12 +29,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
-public class ChunkRegionGraphImpl implements ChunkRegionGraph {
+public class ChunkPathingInfoImpl implements ChunkPathingInfo {
 	private final World world;
 	private final Long2ReferenceMap<WorldChunk> chunks;
 	private final Long2ReferenceMap<EntryImpl> entries;
 
-	public ChunkRegionGraphImpl(final World world) {
+	public ChunkPathingInfoImpl(final World world) {
 		this.world = world;
 		chunks = new Long2ReferenceOpenHashMap<>();
 		entries = new Long2ReferenceOpenHashMap<>();

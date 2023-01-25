@@ -1,6 +1,5 @@
 package io.github.artificial_intellicrafters.merlin_ai.api.util;
 
-import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.ChunkSectionRegion;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
@@ -22,7 +21,6 @@ public final class AStar {
 		double bestDist = Double.POSITIVE_INFINITY;
 		WrappedPathNode<T> best = null;
 		final WrappedPathNode<T> wrappedStart = wrap(start, 1, heuristic);
-		long c = 0;
 		wrappedStart.handle = queue.insert(wrappedStart.heuristicDistance + cost.applyAsDouble(wrappedStart.delegate), wrappedStart);
 		visited.put(keyGetter.applyAsLong(start), wrappedStart);
 		final CostGetter costGetter = key -> {
@@ -50,7 +48,6 @@ public final class AStar {
 			}
 			//Get adjacent nodes, fill the array with them, return how many neighbours were found
 			final int count = neighbourGetter.getNeighbours(current.delegate, context, costGetter, successors);
-			c++;
 			//For each neighbour found
 			for (int i = 0; i < count; i++) {
 				final T next = (T) successors[i];
@@ -79,7 +76,6 @@ public final class AStar {
 				}
 			}
 		}
-		System.out.println(c);
 		return best == null ? new PathInfo<>(visited.size(), null) : partial ? createPath(visited.size(), best, previousNodeGetter) : new PathInfo<>(visited.size(), null);
 	}
 

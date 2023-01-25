@@ -8,7 +8,6 @@ import io.github.artificial_intellicrafters.merlin_ai.api.hierachy.HierarchyInfo
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationClassifier;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetType;
 import io.github.artificial_intellicrafters.merlin_ai.api.location_caching.ValidLocationSetTypeRegistry;
-import io.github.artificial_intellicrafters.merlin_ai.api.path.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionContext;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.CollisionUtil;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.OrablePredicate;
@@ -17,6 +16,7 @@ import io.github.artificial_intellicrafters.merlin_ai.impl.common.PathingChunkSe
 import io.github.artificial_intellicrafters.merlin_ai_test.common.BasicAIPathNode;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.MerlinAITest;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.BasicLocationType;
+import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.NeighbourGetter;
 import io.github.artificial_intellicrafters.merlin_ai_test.common.location_cache_test.TestNodeProducer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -66,18 +66,16 @@ public final class LocationCacheTest {
 
 	static {
 		ValidLocationSetTypeRegistry.INSTANCE.register(BasicLocationType.UNIVERSE_INFO, new ValidLocationClassifier<>() {
-			private static final Box BOX = new Box(0, 0, 0, 1, 2, 1);
-			private static final Box FLOOR = new Box(0, -0.001, 0, 1, 0, 1);
+			private static final Box BOX = new Box(0, -1, 0, 1, 2, 1);
 
 			@Override
 			public BasicLocationType classify(final int x, final int y, final int z, final ShapeCache cache, final AITaskExecutionContext executionContext) {
-				if (CollisionUtil.doesCollide(BOX.offset(x, y, z), cache)) {
-					return BasicLocationType.CLOSED;
-				}
-				if (CollisionUtil.doesCollide(FLOOR.offset(x, y, z), cache)) {
-					return BasicLocationType.GROUND;
-				}
-				return BasicLocationType.OPEN;
+				final CollisionUtil.FloorCollision collision = CollisionUtil.open(BOX.offset(x, y, z), 1 / 3.0 - 0.00000000001, cache);
+				return switch (collision) {
+					case OPEN -> BasicLocationType.OPEN;
+					case FLOOR -> BasicLocationType.GROUND;
+					case CLOSED -> BasicLocationType.CLOSED;
+				};
 			}
 
 			@Override

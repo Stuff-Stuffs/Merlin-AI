@@ -8,12 +8,15 @@ import io.github.artificial_intellicrafters.merlin_ai.api.task.AITaskExecutionCo
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.HeightLimitView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ChunkSectionRegionsAnalysisAITask<T, N, C> implements AITask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSectionRegionsAnalysisAITask.class);
 	private final HierarchyInfo<T, N, C, ?> info;
 	private final Supplier<ShapeCache> cacheFactory;
 	private final BooleanSupplier shouldContinue;
@@ -70,5 +73,10 @@ public class ChunkSectionRegionsAnalysisAITask<T, N, C> implements AITask {
 	@Override
 	public void cancel() {
 		cancel.run();
+	}
+
+	@Override
+	public Logger logger() {
+		return LOGGER;
 	}
 }

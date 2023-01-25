@@ -9,6 +9,8 @@ import io.github.artificial_intellicrafters.merlin_ai.api.util.OrablePredicate;
 import io.github.artificial_intellicrafters.merlin_ai.api.util.ShapeCache;
 import net.minecraft.util.math.ChunkSectionPos;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -16,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, O>> implements AITask {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSectionRegionLinkingAITask.class);
 	private final HierarchyInfo<?, N, C, O> info;
 	private final Supplier<@Nullable Optional<C>> precomputed;
 	private final Supplier<ChunkSectionRegions> regions;
@@ -39,7 +42,7 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 		this.cancel = cancel;
 	}
 
-	public void setContext(AITaskExecutionContext context) {
+	public void setContext(final AITaskExecutionContext context) {
 		this.context = context;
 	}
 
@@ -50,7 +53,7 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 
 	@Override
 	public void runIteration() {
-		if(context==null) {
+		if (context == null) {
 			throw new RuntimeException();
 		}
 		if (shouldContinue.getAsBoolean()) {
@@ -94,5 +97,10 @@ public class ChunkSectionRegionLinkingAITask<N, C, O extends OrablePredicate<N, 
 	@Override
 	public void cancel() {
 		cancel.run();
+	}
+
+	@Override
+	public Logger logger() {
+		return LOGGER;
 	}
 }

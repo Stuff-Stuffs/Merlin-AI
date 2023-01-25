@@ -26,8 +26,8 @@ public class MerlinAI implements ModInitializer {
 	@Override
 	public void onInitialize(final ModContainer mod) {
 		ServerLifecycleEvents.STARTING.register(server -> FROZEN = true);
-		ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).load(chunk));
-		ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> ((ChunkRegionGraphImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).unload(chunk));
+		ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> ((ChunkPathingInfoImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).load(chunk));
+		ServerChunkEvents.CHUNK_UNLOAD.register((world, chunk) -> ((ChunkPathingInfoImpl) ((AIWorld) world).merlin_ai$getChunkGraph()).unload(chunk));
 
 		ServerWorldTickEvents.END.register((server, world) -> ((AIWorld) world).merlin_ai$getTaskExecutor().runTasks(20));
 	}
